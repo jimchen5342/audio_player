@@ -4,11 +4,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:external_path/external_path.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:audio_player/system/system.dart';
+import 'package:audio_player/system/archive.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -26,7 +27,9 @@ class _HomeState extends State<Home> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await initial();
       
-      
+      Archive archive = Archive();
+      List<String> list = await archive.search();
+      print(list);
     });
   }
 
@@ -47,21 +50,9 @@ class _HomeState extends State<Home> {
     } else {
       permission = status.isGranted;
     }
-    // writeFile();
   }
 
-  writeFile() async { // 測好了，可以用
-    var path = await ExternalPath.getExternalStorageDirectories();
-    var file = File('${path[0]}/counter.txt');
 
-    file.writeAsString('jim'); 
-    /* 測好了，可以用
-    var path = await ExternalPath.getExternalStorageDirectories();
-    print("path: ${path[0]}");
-    var path2 = await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_MUSIC);
-    print("DIRECTORY_MUSIC: ${path2}");
-    */
-  }
 
   @override
   void reassemble() async { // develope mode
@@ -97,25 +88,4 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // Future<List<File>> findMP3Files(String directoryPath) async {
-  //   List<File> mp3Files = [];
-
-  //   final Directory directory = Directory(directoryPath);
-  //   if (!directory.exists) {
-  //     throw Exception('Directory does not exist: $directoryPath');
-  //   }
-
-  //   final List<FileSystemEntity> entities = await directory.list();
-  //   for (FileSystemEntity entity in entities) {
-  //     if (entity is File) {
-  //       if (entity.path.endsWith('.mp3')) {
-  //         mp3Files.add(entity);
-  //       }
-  //     } else if (entity is Directory) {
-  //       mp3Files.addAll(await findMP3Files(entity.path));
-  //     }
-  //   }
-
-  //   return mp3Files;
-  // }
 }
