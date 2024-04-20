@@ -20,16 +20,19 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool permission = false;
+  List<dynamic> list = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await initial();
-      
-      Archive archive = Archive();
-      List<String> list = await archive.search();
-      print(list);
+      if(permission) {
+        Archive archive = Archive();
+        list = await archive.getDirectories();        
+      } else {
+        exit(0);
+      }
     });
   }
 
@@ -52,14 +55,15 @@ class _HomeState extends State<Home> {
     }
   }
 
-
-
   @override
   void reassemble() async { // develope mode
     super.reassemble();
 
     Future.delayed(const Duration(milliseconds: 100), () {
     }); 
+
+    Archive archive = Archive();
+    list = await archive.getDirectories();
   }
 
   @override
@@ -71,21 +75,61 @@ class _HomeState extends State<Home> {
   dispose() {
     super.dispose();
   }
+  backTo(){
+    exit(0);
+  }
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (bool didPop) async {
-        if (didPop) {
-          return;
-        }
-        // if(await _controller.currentUrl() == "https://m.youtube.com/") {
-        //   exit(0);
-        // } else {
-        // }
-      },
-      child: Container()
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          // leading: IconButton(
+          //   icon: const Icon(
+          //     Icons.arrow_back_ios_sharp,
+          //     color: Colors.white,
+          //   ),
+          //   onPressed: () => backTo(),
+          // ),
+          title: const Text('音樂播放器',
+            style: TextStyle( color:Colors.white,)
+          ),
+          // actions: [
+          //   IconButton( icon: Icon( Icons.menu, color: Colors.white),
+          //     onPressed: () {
+          //       setup();
+          //     },
+          //   )
+          // ],
+          backgroundColor: Colors.blue, 
+        ),
+        body:
+          PopScope(
+              canPop: false,
+              onPopInvoked: (bool didPop) {
+                if (didPop) {
+                  return;
+                }
+                backTo();
+              },
+              child: body(),
+            ),
+      )
     );
   }
 
+  Widget body() {
+    return ListView.builder(
+      itemCount: list.length,
+      // itemExtent: 50.0, //强制高度为50.0
+      itemBuilder: (BuildContext context, int index) {
+        return InkWell(
+            child: Text("${list[index]["title"]}"),
+            onTap: () => {
+
+            }
+          );
+
+      },
+    );
+  }
 }
