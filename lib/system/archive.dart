@@ -70,24 +70,31 @@ class Archive {
   Future<List<dynamic>> getDirectories(String directoryPath) async {
     String root = await Archive.root();
     List<dynamic> list = [];
-
-    
-    if(directoryPath.startsWith(".") == false) {
+    String path = directoryPath.replaceAll("$root/", "");
+    if(path.startsWith(".") == false) {
       var dirList1 = Directory(directoryPath).list();
       var b1 = false;
       await for (final FileSystemEntity f1 in dirList1) {
         if (f1 is Directory) {
-          var list2 = await getDirectories(f1.path);
-          list = list + list2;
+          if(f1.path.startsWith(".") == false) {
+            var list2 = await getDirectories(f1.path);
+            if(list2.isNotEmpty) {
+              list = list + list2;
+            }
+          }
         } else if(b1 == true) {
           continue;
         } else if(f1 is File && (f1.path.toLowerCase().endsWith('.mp3') || f1.path.toLowerCase().endsWith('.mp4'))) {
-          b1 = true;
-          String title = directoryPath.replaceAll("$root/", "");
-          print(title + ": " + directoryPath);
-          dynamic json = {"title": directoryPath.replaceAll("$root/", ""), "path": directoryPath};
-          list.add(json);
-
+          print(f1.path);
+          var paths = directoryPath.split('/');
+          String title = paths[paths.length - 1];
+          if(title.startsWith(".") == false) {
+            b1 = true;
+            
+            print("$title; $path");
+            dynamic json = {"title": title, "path": path};
+            list.add(json);            
+          }
         }
       }
     }

@@ -19,28 +19,28 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  bool permission = false;
   List<dynamic> list = [];
+  var loadingContext;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await initial();
-      if(permission) {
-        Archive archive = Archive();
-        list = await archive.getDirectories(await Archive.root());        
-      } else {
-        exit(0);
+      await invokePermission();
+
+      // await Storage.remove("Directories"); // 測試用
+      list = await Storage.getJSON("Directories");
+      if(list.isEmpty) {
+        await refresh();        
       }
+      setState(() {});
     });
   }
 
-  initial() async {
+  invokePermission() async {
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     AndroidDeviceInfo build = await deviceInfoPlugin.androidInfo;
-
-    Map<Permission, PermissionStatus> statuses = await [
+    await [
           build.version.sdkInt < 30 
           ? Permission.storage
           : Permission.manageExternalStorage
@@ -51,7 +51,7 @@ class _HomeState extends State<Home> {
     if(! status.isGranted) {
       exit(0);
     } else {
-      permission = status.isGranted;
+      return status.isGranted;
     }
   }
 
@@ -61,14 +61,25 @@ class _HomeState extends State<Home> {
 
     Future.delayed(const Duration(milliseconds: 100), () {
     }); 
-
-    Archive archive = Archive();
-    list = await archive.getDirectories(await Archive.root());
   }
 
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
+  }
+
+  refresh() async {
+    loading(context, onReady: (_) {
+      loadingContext = _;      
+    });
+    Archive archive = Archive();
+    list = await archive.getDirectories(await Archive.root()); 
+    await Storage.setJSON("Directories", list); 
+
+    if(loadingContext != null) {
+      Navigator.pop(loadingContext);
+    }
+    loadingContext = null;
   }
 
   @override
@@ -93,13 +104,14 @@ class _HomeState extends State<Home> {
           title: const Text('音樂播放器',
             style: TextStyle( color:Colors.white,)
           ),
-          // actions: [
-          //   IconButton( icon: Icon( Icons.menu, color: Colors.white),
-          //     onPressed: () {
-          //       setup();
-          //     },
-          //   )
-          // ],
+          actions: [
+            IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
+              onPressed: () async {
+                await refresh();
+                setState(() {});
+              },
+            )
+          ],
           backgroundColor: Colors.blue, 
         ),
         body:

@@ -19,7 +19,7 @@ Future<void> alert(BuildContext context, String msg, {List<Widget>? btns}) {
     builder: (BuildContext context) {
       return AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-        title: const Text('運動'),
+        title: const Text('音樂播放器'),
         // barrierDismissible: false,
         // contentPadding: EdgeInsets.all(20),
         content: Text(msg,
