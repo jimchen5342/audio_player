@@ -130,18 +130,51 @@ class _HomeState extends State<Home> {
   }
 
   Widget body() {
+  
     return ListView.builder(
       itemCount: list.length,
       // itemExtent: 50.0, //强制高度为50.0
       itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-            child: Text("${list[index]["title"]}"),
-            onTap: () => {
+        return Container(
+          child: Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Container(
+                  child: InkWell(
+                    child: Text("${list[index]["title"]}",
+                      style: const TextStyle(
+                        // color:Colors.white,
+                        fontSize: 18
+                      )
+                    ),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/player', arguments: list[index]);
+                    }
+                  ),
+                )
+              ),
+              IconButton(
+                iconSize: 20,
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+            
+                },
+              ),
+            ],
+          )
+        );
 
-            }
-          );
+
+        // return InkWell(
+        //     child: Text("${list[index]["title"]}"),
+        //     onTap: () {
+        //       Navigator.pushNamed(context, '/player', arguments: list[index]);
+        //     }
+        //   );
 
       },
     );
   }
+
 }

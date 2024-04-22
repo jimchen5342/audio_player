@@ -4,18 +4,20 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class Player extends StatefulWidget {
+  // String directory;
   Player({Key? key}) : super(key: key);
   @override
   _PlayerState createState() => _PlayerState();
 }
 
 class _PlayerState extends State<Player> {
-
+  String title = "";
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-
+      dynamic arg = ModalRoute.of(context)!.settings.arguments;
+      title = arg["title"];
     });
   }
 
@@ -34,9 +36,6 @@ class _PlayerState extends State<Player> {
   dispose() {
     super.dispose();
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
