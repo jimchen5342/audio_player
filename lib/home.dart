@@ -29,7 +29,7 @@ class _HomeState extends State<Home> {
       await initial();
       if(permission) {
         Archive archive = Archive();
-        list = await archive.getDirectories();        
+        list = await archive.getDirectories(await Archive.root());        
       } else {
         exit(0);
       }
@@ -63,7 +63,7 @@ class _HomeState extends State<Home> {
     }); 
 
     Archive archive = Archive();
-    list = await archive.getDirectories();
+    list = await archive.getDirectories(await Archive.root());
   }
 
   @override
