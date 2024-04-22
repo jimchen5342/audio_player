@@ -47,7 +47,7 @@ class Archive {
     return list;
   }
 
-  Future<List<dynamic>> getFiles(String directoryPath) async {
+  Future<List<String>> getFiles(String directoryPath) async {
     String root = await Archive.root();
     List<String> list = [];
     var dirList1 = Directory("$root/$directoryPath").list();

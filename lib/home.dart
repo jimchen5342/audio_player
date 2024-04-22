@@ -130,27 +130,32 @@ class _HomeState extends State<Home> {
   }
 
   Widget body() {
-  
     return ListView.builder(
       itemCount: list.length,
       // itemExtent: 50.0, //强制高度为50.0
       itemBuilder: (BuildContext context, int index) {
         return Container(
+          decoration: BoxDecoration(           // 裝飾內裝元件
+            // color: Colors.green, // 綠色背景
+            border: Border(bottom: BorderSide(width: 1.5, color: Colors.blue.shade100)), // 藍色邊框
+          ),
           child: Row(
             children: [
               Expanded(
                 flex: 1,
-                child: Container(
-                  child: InkWell(
+                child: InkWell (
+                onTap: () {
+                    Navigator.pushNamed(context, '/player', arguments: list[index]);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
                     child: Text("${list[index]["title"]}",
                       style: const TextStyle(
                         // color:Colors.white,
                         fontSize: 18
                       )
                     ),
-                    onTap: () {
-                      Navigator.pushNamed(context, '/player', arguments: list[index]);
-                    }
+                    
                   ),
                 )
               ),
@@ -164,15 +169,6 @@ class _HomeState extends State<Home> {
             ],
           )
         );
-
-
-        // return InkWell(
-        //     child: Text("${list[index]["title"]}"),
-        //     onTap: () {
-        //       Navigator.pushNamed(context, '/player', arguments: list[index]);
-        //     }
-        //   );
-
       },
     );
   }
