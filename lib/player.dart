@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:audio_player/system/system.dart';
+import 'package:audio_player/system/module.dart';
 
 class Player extends StatefulWidget {
   // String directory;
@@ -15,6 +15,8 @@ class _PlayerState extends State<Player> {
   String title = "";
   List<String> list = [];
   int index = -1;
+  Duration _duration = Duration(seconds: 1000);
+  Duration _position = Duration(seconds: 100);
 
   @override
   void initState() {
@@ -87,7 +89,7 @@ class _PlayerState extends State<Player> {
                   flex: 1,
                   child: body(),
                 ),
-                // footer()
+                footer()
               ],),
             ),
       )
@@ -140,15 +142,35 @@ class _PlayerState extends State<Player> {
   Widget footer() {
     // _controller!.value.isPlaying ? Icons.pause :
     return Row(
-      children: [ 
+      children: [
         IconButton(
-          icon: Icon( Icons.play_arrow),
+          icon: Icon( Icons.play_arrow, size: 30,),
           color:   Colors.black54,
           iconSize: 20,
           onPressed: () {
             // _controller!.value.isPlaying ? pause() : play();
             setState(() { });
-          })
+          }
+        ),
+        Expanded(
+          flex: 1,
+          child: Slider(
+            value: _position.inSeconds.toDouble(),
+            min: 0,
+            max: _duration.inSeconds.toDouble(),
+            label: _position.toString(),
+            onChanged: (double value) {
+              setState(() {
+                // _controller!.seekTo(Duration(seconds: value.toInt()));
+                // Timer(Duration(milliseconds: 300), () {
+                //   _position = _controller!.value.position;
+                //   this.widget.onProcessing(_position.inSeconds);
+                  this.setState((){});
+                });
+              }
+          ),
+        ),
+
       ]
     );
 

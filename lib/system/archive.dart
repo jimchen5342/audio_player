@@ -24,21 +24,18 @@ class Archive {
     List<dynamic> list = [];
     String path = directoryPath.replaceAll("$root/", "");
     
-    if(path.startsWith(".") == false) {
+    if(!(path.startsWith(".") || path.startsWith("Android"))) {
       var dirList1 = Directory(directoryPath).list();
       var b1 = false;
       await for (final FileSystemEntity f1 in dirList1) {
         if (f1 is Directory) {
-          if(!(f1.path.startsWith(".") == false || f1.path.startsWith("Android"))) {
-            var list2 = await getDirectories(f1.path);
-            if(list2.isNotEmpty) {
-              list = list + list2;
-            }
+          var list2 = await getDirectories(f1.path);
+          if(list2.isNotEmpty) {
+            list = list + list2;
           }
         } else if(b1 == true) {
           continue;
         } else if(f1 is File && isMP3(f1)) {
-          print(path);
           var paths = directoryPath.split('/');
           String title = paths[paths.length - 1];
           b1 = true;

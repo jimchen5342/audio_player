@@ -4,11 +4,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:audio_player/system/system.dart';
+import 'package:audio_player/system/module.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -61,8 +60,9 @@ class _HomeState extends State<Home> {
     // await Storage.remove("Directories"); // 測試用
     // await Storage.remove("blackList"); // 測試用
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-    }); 
+    setTimeout(() => {
+
+    }, 1000);
   }
 
   @override
