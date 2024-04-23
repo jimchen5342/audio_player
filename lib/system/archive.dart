@@ -29,7 +29,7 @@ class Archive {
       var b1 = false;
       await for (final FileSystemEntity f1 in dirList1) {
         if (f1 is Directory) {
-          if(f1.path.startsWith(".") == false) {
+          if(!(f1.path.startsWith(".") == false || f1.path.startsWith("Android"))) {
             var list2 = await getDirectories(f1.path);
             if(list2.isNotEmpty) {
               list = list + list2;

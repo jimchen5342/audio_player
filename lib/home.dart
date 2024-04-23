@@ -28,7 +28,6 @@ class _HomeState extends State<Home> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
 
-      
       active = await Storage.getString("active");
       list = await Storage.getJsonList("Directories");
       if(list.isEmpty) {
@@ -121,7 +120,7 @@ class _HomeState extends State<Home> {
               IconButton( icon: const Icon( Icons.delete, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
-                    if(blackList.contains("'" + list[i]["path"] + "'")) {
+                    if(blackList.contains("'${list[i]["path"]}'")) {
                       list.removeAt(i);
                     }
                   }
@@ -158,7 +157,7 @@ class _HomeState extends State<Home> {
       itemCount: list.length,
       itemExtent: 50.0, //强制高度
       itemBuilder: (BuildContext context, int index) {
-        String path = "'" + list[index]["path"] + "'";
+        String path = "'${list[index]["path"]}'";
         return Container(
           decoration: BoxDecoration(           // 裝飾內裝元件
             color: active == list[index]["path"] ? Colors.lightBlueAccent.shade100 : Colors.transparent,
