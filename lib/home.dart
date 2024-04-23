@@ -174,7 +174,6 @@ class _HomeState extends State<Home> {
                     active = list[index]["path"];
                     setState(() {});
                     await Storage.setString("active", active);
-                    // alert(context, "test");
                   },
                   child: Container(
                     padding: const EdgeInsets.all(10),
@@ -184,7 +183,6 @@ class _HomeState extends State<Home> {
                         fontSize: 18
                       )
                     ),
-                    
                   ),
                 )
               ),

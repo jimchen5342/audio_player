@@ -83,8 +83,11 @@ class _PlayerState extends State<Player> {
                 backTo();
               },
               child: Column(children: [ 
-                body(),
-                footer()
+                Expanded(
+                  flex: 1,
+                  child: body(),
+                ),
+                // footer()
               ],),
             ),
       )
