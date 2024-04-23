@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:audio_player/system/archive.dart';
+import 'package:audio_player/system/system.dart';
 
 class Player extends StatefulWidget {
   // String directory;
@@ -26,8 +26,6 @@ class _PlayerState extends State<Player> {
 
       Archive archive = Archive();
       list = await archive.getFiles("$path");
-
-      print(list);
       setState(() { });
     });
   }
@@ -73,7 +71,7 @@ class _PlayerState extends State<Player> {
           //     },
           //   )
           // ],
-          backgroundColor: Colors.blue, 
+          backgroundColor: Colors.blueAccent, 
         ),
         body:
           PopScope(
@@ -84,7 +82,10 @@ class _PlayerState extends State<Player> {
                 }
                 backTo();
               },
-              child: body(),
+              child: Column(children: [ 
+                body(),
+                footer()
+              ],),
             ),
       )
     );
@@ -131,5 +132,22 @@ class _PlayerState extends State<Player> {
         );
       },
     );
+  }
+
+  Widget footer() {
+    // _controller!.value.isPlaying ? Icons.pause :
+    return Row(
+      children: [ 
+        IconButton(
+          icon: Icon( Icons.play_arrow),
+          color:   Colors.black54,
+          iconSize: 20,
+          onPressed: () {
+            // _controller!.value.isPlaying ? pause() : play();
+            setState(() { });
+          })
+      ]
+    );
+
   }
 }

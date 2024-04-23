@@ -1,5 +1,6 @@
 import 'package:external_path/external_path.dart';
 import 'dart:io';
+import 'package:audio_player/system/storage.dart';
 /*
 await ExternalPath.getExternalStorageDirectories();
 
@@ -17,9 +18,12 @@ class Archive {
   }
 
   Future<List<dynamic>> getDirectories(String directoryPath) async {
+    String blackList = await Storage.getString("blackList");
+    // blackList = "'MyTube'";
     String root = await Archive.root();
     List<dynamic> list = [];
     String path = directoryPath.replaceAll("$root/", "");
+    
     if(path.startsWith(".") == false) {
       var dirList1 = Directory(directoryPath).list();
       var b1 = false;
@@ -34,12 +38,13 @@ class Archive {
         } else if(b1 == true) {
           continue;
         } else if(f1 is File && isMP3(f1)) {
+          print(path);
           var paths = directoryPath.split('/');
           String title = paths[paths.length - 1];
-          if(title.startsWith(".") == false) {
-            b1 = true;
+          b1 = true;
+          if(!blackList.contains("'$path'")) {
             dynamic json = {"title": title, "path": path};
-            list.add(json);
+            list.add(json);              
           }
         }
       }
