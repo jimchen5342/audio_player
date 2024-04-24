@@ -34,6 +34,37 @@ Future<void> alert(BuildContext context, String msg, {List<Widget>? btns}) {
   );
 }
 
+void loading(BuildContext context, {Function(BuildContext)? onReady}){
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      if(onReady is Function) {
+        onReady!(context);
+      }
+      return Dialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(height: 15, width: 0),
+            CircularProgressIndicator(),
+            Container(height: 15, width: 0),
+            const Text("Loading......",
+              style: TextStyle(
+                color: Colors.blue,
+                fontSize: 20,
+              )
+            ),
+            Container(height: 15, width: 0),
+          ],
+        ),
+      );
+    },
+  );
+}
 
 Future<void> setTimeout(Function() callback, int ms) async {
   await Future.delayed(Duration(milliseconds: ms), callback); 

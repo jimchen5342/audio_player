@@ -39,7 +39,20 @@ public class MainActivity extends FlutterActivity {
     MethodChannel.MethodCallHandler mMethodHandle = new MethodChannel.MethodCallHandler() {
         @Override
         public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
-            if(call.method.equals("play")) {
+            if(call.method.equals("initial")) {
+                Intent intent = new Intent();
+                intent.putExtra("action", "initial");
+                String path = call.argument("path");
+                intent.putExtra("path", path);
+
+                print(path);
+
+                String list = call.argument("list");
+                intent.putExtra("list", list);
+
+                intent.setClass(MainActivity.this, PlayerService.class);
+                startService(intent);
+            } else if(call.method.equals("play")) {
 
 //                mode = "play";
 //                title = call.argument("title");

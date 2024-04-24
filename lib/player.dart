@@ -12,8 +12,9 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
-  String title = "", active = "";
+  String title = "", playState = "stop";
   List<String> list = [];
+  int active = -1;
 
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
@@ -45,10 +46,18 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       title = arg["title"] as String;
       String path = arg["path"] as String;
 
+
       // active = await Storage.getString("activeFile");
       Archive archive = Archive();
-      list = await archive.getFiles("$path");
+      list = await archive.getFiles(path);
+
       setState(() { });
+
+      String root = await Archive.root();
+      await methodChannel.invokeMethod('initital', {
+        "path": "$root/$path",
+        "list": jsonEncode(list)
+      });
     });
   }
 
@@ -63,7 +72,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   @override
-  dispose() {
+  dispose() async {
     super.dispose();
     WidgetsBinding.instance.removeObserver(this); // 移除监听器
   }
@@ -82,6 +91,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   streamSubscription() { // 事件監聽
     _streamSubscription ??= eventChannel.receiveBroadcastStream().listen((data) async {
+      var json = jsonDecode(data);
+      String action = json["action"] ??= "";
+      if(action == "start") {
+        playState = "play";
+        _position = Duration(seconds: 0);
+      } else if(action == "play") {
+        playState = "play";
+        _position = Duration(seconds: 100);
+      } else if(action == "pause") {
+        playState = "pause";
+      } else if(action == "stop") {
+        playState = "stop";
+      }
 
     });
   }
@@ -128,7 +150,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 flex: 1,
                 child: body(),
               ),
-              if(active.isNotEmpty)
+              if(active > -1)
                 footer()
             ],),
           ),
@@ -152,6 +174,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 flex: 1,
                 child: InkWell (
                   onTap: () {
+                    play(index);
                       // Navigator.pushNamed(context, '/player', arguments: list[index]);
                   },
                   child: Container(
@@ -161,12 +184,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                         Container(
                           width: 20,
                           margin: const EdgeInsets.only(right: 5),
-                          // decoration: BoxDecoration(           // 裝飾內裝元件
+                          // decoration: BoxDecoration(
                               // border: Border.all(width: 1.0, color: Colors.black),
                           // ),
-                          child: null, // Icon( Icons.play_arrow, size: 20,),
+                          child: active != index ? null : Icon(Icons.play_arrow, size: 20),
                         ),
-                        
                         Text(list[index],
                           style: const TextStyle(
                             // color:Colors.white,
@@ -192,17 +214,33 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
+  play(index) async {
+    active = index;
+    _position = const Duration(seconds: 0);
+    await methodChannel.invokeMethod('play', {
+      // "title": download.title,
+      // "author": download.author,
+      "mp3": list[index],
+      "position": 0
+    });
+    setState(() {});
+  }
+  
   Widget footer() {
     // _controller!.value.isPlaying ? Icons.pause :
     return Row(
       children: [
         IconButton(
-          icon: Icon( Icons.play_arrow, size: 30,),
+          icon: Icon(playState == "pause" ? Icons.play_arrow : Icons.pause, 
+            size: 30,),
           color:   Colors.black54,
           iconSize: 20,
           onPressed: () {
-            // _controller!.value.isPlaying ? pause() : play();
-            setState(() { });
+            if(playState == "pause") {
+              methodChannel.invokeMethod('play');
+            } else {
+              methodChannel.invokeMethod('pause');
+            }
           }
         ),
         Expanded(
@@ -213,16 +251,26 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             max: _duration.inSeconds.toDouble(),
             label: _position.toString(),
             onChanged: (double value) {
-              // setState(() {
-                // _controller!.seekTo(Duration(seconds: value.toInt()));
-                // Timer(Duration(milliseconds: 300), () {
-                //   _position = _controller!.value.position;
-                //   this.widget.onProcessing(_position.inSeconds);
-                  this.setState((){});
-                // });
-              }
+              methodChannel.invokeMethod('seek', {
+                // "title": download.title,
+                // "author": download.author,
+                "position": value
+              });
+              _position = Duration(seconds: value.toInt());
+              setState((){});
+            }
           ),
         ),
+        if(playState == "play")
+          IconButton(
+            icon: const Icon( Icons.stop,  size: 30,),
+            color: Colors.black54,
+            iconSize: 20,
+            onPressed: () {
+              // _controller!.value.isPlaying ? pause() : play();
+              methodChannel.invokeMethod('stop');
+            }
+          ),
       ]
     );
   }

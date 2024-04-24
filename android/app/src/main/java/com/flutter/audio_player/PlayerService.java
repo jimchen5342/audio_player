@@ -11,10 +11,15 @@ import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class PlayerService extends Service {
     MediaPlayer mPlayer;
     HeadsetReceiver headsetReceiver;
-//    String
+    String path = "", TAG = "PlayerService";
+    List<String> list;
 
     public PlayerService() {
 
@@ -29,9 +34,6 @@ public class PlayerService extends Service {
         registerReceiver(headsetReceiver, filter);
 
         try {
-//            AssetManager assetManager = Utility.ctx.getAssets();
-//            AssetFileDescriptor afd = assetManager.openFd(src);
-            //Log.i(TAG, afd.toString());
             mPlayer = new MediaPlayer();
             mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
@@ -40,16 +42,19 @@ public class PlayerService extends Service {
 
                 }
             });
+            mPlayer.setLooping(false);
+
 //            mPlayer.setDataSource(afd.getFileDescriptor(),
 //                    afd.getStartOffset(), afd.getLength());
 //            mPlayer.prepare();
-//            mPlayer.setLooping(false);
+           
 //            mPlayer.start();
         } catch (Exception e) {
             mPlayer = null;
             e.printStackTrace();
 //            Log.i(TAG, e.getMessage());
         } finally {
+
         }
     }
 
@@ -66,6 +71,16 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getExtras().getString("action");
+        if(action.equals("initial")) {
+            path = intent.getExtras().getString("path");
+            Log.i(TAG, path);
+
+            String s1 = intent.getExtras().getString("list");
+            Log.i(TAG, s1);
+
+            String replace = s1.replace("[","").replace("]","");
+            list = new ArrayList<String>(Arrays.asList(replace.split(",")));
+        }
 
         return START_REDELIVER_INTENT;
     }

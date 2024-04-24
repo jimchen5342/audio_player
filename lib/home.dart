@@ -21,6 +21,8 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<dynamic> list = [];
   String active = "", blackList = "";
+  final ScrollController _controller = ScrollController();
+  final double _height = 58.0;
 
   @override
   void initState() {
@@ -31,8 +33,17 @@ class _HomeState extends State<Home> {
       list = await Storage.getJsonList("Directories");
       if(list.isEmpty) {
         await refresh();        
+      } else {
+        if(list.length > 10) {
+          for(var i = 0; i < list.length; i++) {
+            if(active == list[i]["path"]){
+              _animateToIndex(i);
+              break;
+            }
+          }
+        }
+        setState(() {});
       }
-      
     });
   }
 
@@ -157,7 +168,7 @@ class _HomeState extends State<Home> {
   Widget body() {
     return ListView.builder(
       itemCount: list.length,
-      // itemExtent: 50.0, //强制高度
+      itemExtent: _height, //强制高度
       itemBuilder: (BuildContext context, int index) {
         String path = "'${list[index]["path"]}'";
         return Container(
@@ -177,7 +188,8 @@ class _HomeState extends State<Home> {
                     await Storage.setString("activeDirectory", active);
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(5),
+                    // padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,14 +197,15 @@ class _HomeState extends State<Home> {
                         Text("${list[index]["title"]}",
                           style: TextStyle(
                             color: active == list[index]["path"] ?Colors.white : null,
+                            fontWeight: FontWeight.bold,
                             fontSize: 16
                           )
                         ),
                         if(list[index]["count"] != null)
-                          Text("    ${list[index]["count"]}首",
+                          Text("   ${list[index]["count"]}首",
                             style: TextStyle(
                               color: active == list[index]["path"] ?Colors.white : null,
-                              fontSize: 14
+                              fontSize: 12
                             )
                           )
                       ]
@@ -231,6 +244,14 @@ class _HomeState extends State<Home> {
           )
         );
       },
+    );
+  }
+
+  void _animateToIndex(int index) {
+    _controller.animateTo(
+      index * _height,
+      duration: Duration(seconds: 2),
+      curve: Curves.fastOutSlowIn,
     );
   }
 }
