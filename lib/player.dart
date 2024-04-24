@@ -11,15 +11,35 @@ class Player extends StatefulWidget {
   _PlayerState createState() => _PlayerState();
 }
 
-class _PlayerState extends State<Player> {
+class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", active = "";
   List<String> list = [];
+
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
+
+  final methodChannel = const MethodChannel('com.flutter/MethodChannel');
+  final eventChannel = const EventChannel('com.flutter/EventChannel');
+  StreamSubscription? _streamSubscription;
+
+  // methodChannel.invokeMethod('finish');
+  /*
+  await methodChannel.invokeMethod('play', {
+      "title": download.title,
+      "author": download.author,
+      "position": ""
+    });
+    eventChannel.receiveBroadcastStream().listen((data) async {
+
+      });
+   */
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // 注册监听器
+    streamSubscription();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
@@ -45,6 +65,25 @@ class _PlayerState extends State<Player> {
   @override
   dispose() {
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this); // 移除监听器
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if(AppLifecycleState.resumed == state) {
+      streamSubscription();
+    }
+    else if(AppLifecycleState.paused == state) {
+      _streamSubscription?.cancel();
+      _streamSubscription = null;
+      debugPrint("didChangeAppLifecycleState: $state");
+    }
+  }
+
+  streamSubscription() { // 事件監聽
+    _streamSubscription ??= eventChannel.receiveBroadcastStream().listen((data) async {
+
+    });
   }
 
   backTo() {

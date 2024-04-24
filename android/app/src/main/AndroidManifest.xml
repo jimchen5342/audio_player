@@ -31,7 +31,7 @@
         <service android:name=".PlayerService"
             android:exported="true">
             <intent-filter >
-                <action android:name="com.flutter.audio_player"/>
+                <action android:name="com.flutter.audio_player.service"/>
             </intent-filter>
         </service>
         <!-- Don't delete the meta-data below.

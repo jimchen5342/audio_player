@@ -14,6 +14,7 @@ import android.util.Log;
 public class PlayerService extends Service {
     MediaPlayer mPlayer;
     HeadsetReceiver headsetReceiver;
+//    String
 
     public PlayerService() {
 
@@ -64,7 +65,9 @@ public class PlayerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
+        String action = intent.getExtras().getString("action");
+
+        return START_REDELIVER_INTENT;
     }
 
     @Override
@@ -74,6 +77,7 @@ public class PlayerService extends Service {
     }
 
     void play() {
+
 //        mPlayer.setDataSource(afd.getFileDescriptor(),
 //                    afd.getStartOffset(), afd.getLength());
 //                mPlayer.prepare();

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
@@ -38,6 +39,30 @@ public class MainActivity extends FlutterActivity {
     MethodChannel.MethodCallHandler mMethodHandle = new MethodChannel.MethodCallHandler() {
         @Override
         public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
+            if(call.method.equals("play")) {
+
+//                mode = "play";
+//                title = call.argument("title");
+//                author = call.argument("author");
+//                position = call.argument("position");
+//                showNotification();
+
+
+                Intent intent = new Intent();
+                intent.putExtra("action", "play");
+                intent.putExtra("playList", "");
+                intent.putExtra("fileName", "");
+                intent.putExtra("positionn", 0);
+
+                intent.setClass(MainActivity.this, PlayerService.class);
+                startService(intent);
+            } else if(call.method.equals("pause")) {
+//                mode = "pause";
+//                showNotification();
+            } else if(call.method.equals("stop")) {
+//                mode = "stop";
+//                mNM.cancel(1);
+            }
 
         }
     };
