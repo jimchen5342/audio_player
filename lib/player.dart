@@ -116,12 +116,25 @@ class _PlayerState extends State<Player> {
                   },
                   child: Container(
                     padding: const EdgeInsets.all(10),
-                    child: Text(list[index],
-                      style: const TextStyle(
-                        // color:Colors.white,
-                        fontSize: 18
-                      )
-                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 20,
+                          margin: const EdgeInsets.only(right: 5),
+                          // decoration: BoxDecoration(           // 裝飾內裝元件
+                              // border: Border.all(width: 1.0, color: Colors.black),
+                          // ),
+                          child: null, // Icon( Icons.play_arrow, size: 20,),
+                        ),
+                        
+                        Text(list[index],
+                          style: const TextStyle(
+                            // color:Colors.white,
+                            fontSize: 18
+                          )
+                        ),
+                      ]
+                    )
                   ),
                 )
               ),

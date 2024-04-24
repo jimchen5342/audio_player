@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:async';
@@ -18,7 +20,6 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [];
-  var loadingContext;
   String active = "", blackList = "";
 
   @override
@@ -26,13 +27,12 @@ class _HomeState extends State<Home> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
-
       active = await Storage.getString("active");
       list = await Storage.getJsonList("Directories");
       if(list.isEmpty) {
         await refresh();        
       }
-      setState(() {});
+      
     });
   }
 
@@ -55,7 +55,7 @@ class _HomeState extends State<Home> {
   }
 
   @override
-  void reassemble() async { // develope mode
+  void reassemble() async { // 測試用, develope mode
     super.reassemble();
     // await Storage.remove("Directories"); // 測試用
     // await Storage.remove("blackList"); // 測試用
@@ -71,17 +71,13 @@ class _HomeState extends State<Home> {
   }
 
   refresh() async {
-    loading(context, onReady: (_) {
-      loadingContext = _;      
+    loading(context, onReady: (_) async {
+      Archive archive = Archive();
+      list = await archive.getDirectories(await Archive.root()); 
+      await Storage.setJsonList("Directories", list); 
+      Navigator.pop(_);
+      setState(() {});
     });
-    Archive archive = Archive();
-    list = await archive.getDirectories(await Archive.root()); 
-    await Storage.setJsonList("Directories", list); 
-
-    if(loadingContext != null) {
-      Navigator.pop(loadingContext);
-    }
-    loadingContext = null;
   }
 
   @override
@@ -113,11 +109,17 @@ class _HomeState extends State<Home> {
               IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
                 onPressed: () async {
                   await refresh();
-                  setState(() {});
                 },
               ),
             if(blackList.isNotEmpty)
-              IconButton( icon: const Icon( Icons.delete, color: Colors.white),
+            IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
+                onPressed: () async {
+                  blackList = "";
+                  setState(() {});
+                }
+            ),
+            if(blackList.isNotEmpty)
+              IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
                     if(blackList.contains("'${list[i]["path"]}'")) {
@@ -155,7 +157,7 @@ class _HomeState extends State<Home> {
   Widget body() {
     return ListView.builder(
       itemCount: list.length,
-      itemExtent: 50.0, //强制高度
+      // itemExtent: 50.0, //强制高度
       itemBuilder: (BuildContext context, int index) {
         String path = "'${list[index]["path"]}'";
         return Container(
@@ -175,19 +177,32 @@ class _HomeState extends State<Home> {
                     await Storage.setString("active", active);
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(10),
-                    child: Text("${list[index]["title"]}",
-                      style: TextStyle(
-                        color: active == list[index]["path"] ?Colors.white : null,
-                        fontSize: 18
-                      )
-                    ),
+                    padding: const EdgeInsets.all(5),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("${list[index]["title"]}",
+                          style: TextStyle(
+                            color: active == list[index]["path"] ?Colors.white : null,
+                            fontSize: 16
+                          )
+                        ),
+                        if(list[index]["count"] != null)
+                          Text("    ${list[index]["count"]}首",
+                            style: TextStyle(
+                              color: active == list[index]["path"] ?Colors.white : null,
+                              fontSize: 14
+                            )
+                          )
+                      ]
+                    )
                   ),
                 )
               ),
               if(blackList.isEmpty)
                 IconButton(
-                  iconSize: 30,
+                  iconSize: 20,
                   icon: Icon(Icons.delete, color: active == list[index]["path"] ?Colors.white : null),
                   onPressed: () {
                     blackList = path;
@@ -196,7 +211,7 @@ class _HomeState extends State<Home> {
                 ),
               if(blackList.isNotEmpty && blackList.contains(path))
                 IconButton(
-                  iconSize: 30,
+                  iconSize: 20,
                   icon: Icon(Icons.check_box_rounded, color: active == list[index]["path"] ?Colors.white : null),
                   onPressed: () {
                     blackList = blackList.replaceAll(path, "");
@@ -205,7 +220,7 @@ class _HomeState extends State<Home> {
                 ),
               if(blackList.isNotEmpty && ! blackList.contains(path))
                 IconButton(
-                  iconSize: 30,
+                  iconSize: 20,
                   icon: Icon(Icons.check_box_outline_blank_rounded, color: active == list[index]["path"] ?Colors.white : null),
                   onPressed: () {
                     blackList += path;
