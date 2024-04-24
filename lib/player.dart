@@ -12,9 +12,8 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> {
-  String title = "";
+  String title = "", active = "";
   List<String> list = [];
-  int index = -1;
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
 
@@ -26,6 +25,7 @@ class _PlayerState extends State<Player> {
       title = arg["title"] as String;
       String path = arg["path"] as String;
 
+      active = await Storage.getString("activeFile");
       Archive archive = Archive();
       list = await archive.getFiles("$path");
       setState(() { });

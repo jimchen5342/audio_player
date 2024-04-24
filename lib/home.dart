@@ -27,7 +27,7 @@ class _HomeState extends State<Home> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
-      active = await Storage.getString("active");
+      active = await Storage.getString("activeDirectory");
       list = await Storage.getJsonList("Directories");
       if(list.isEmpty) {
         await refresh();        
@@ -174,7 +174,7 @@ class _HomeState extends State<Home> {
                     Navigator.pushNamed(context, '/player', arguments: list[index]);
                     active = list[index]["path"];
                     setState(() {});
-                    await Storage.setString("active", active);
+                    await Storage.setString("activeDirectory", active);
                   },
                   child: Container(
                     padding: const EdgeInsets.all(5),
