@@ -25,7 +25,7 @@ class _PlayerState extends State<Player> {
       title = arg["title"] as String;
       String path = arg["path"] as String;
 
-      active = await Storage.getString("activeFile");
+      // active = await Storage.getString("activeFile");
       Archive archive = Archive();
       list = await archive.getFiles("$path");
       setState(() { });
@@ -77,21 +77,22 @@ class _PlayerState extends State<Player> {
         ),
         body:
           PopScope(
-              canPop: false,
-              onPopInvoked: (bool didPop) {
-                if (didPop) {
-                  return;
-                }
-                backTo();
-              },
-              child: Column(children: [ 
-                Expanded(
-                  flex: 1,
-                  child: body(),
-                ),
+            canPop: false,
+            onPopInvoked: (bool didPop) {
+              if (didPop) {
+                return;
+              }
+              backTo();
+            },
+            child: Column(children: [ 
+              Expanded(
+                flex: 1,
+                child: body(),
+              ),
+              if(active.isNotEmpty)
                 footer()
-              ],),
-            ),
+            ],),
+          ),
       )
     );
   }
@@ -173,19 +174,17 @@ class _PlayerState extends State<Player> {
             max: _duration.inSeconds.toDouble(),
             label: _position.toString(),
             onChanged: (double value) {
-              setState(() {
+              // setState(() {
                 // _controller!.seekTo(Duration(seconds: value.toInt()));
                 // Timer(Duration(milliseconds: 300), () {
                 //   _position = _controller!.value.position;
                 //   this.widget.onProcessing(_position.inSeconds);
                   this.setState((){});
-                });
+                // });
               }
           ),
         ),
-
       ]
     );
-
   }
 }

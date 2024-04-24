@@ -16,7 +16,6 @@ import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class MainActivity extends FlutterActivity {
     public static EventChannel.EventSink eventSink;
-    HeadsetReceiver headsetReceiver;
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -29,17 +28,11 @@ public class MainActivity extends FlutterActivity {
         new EventChannel(flutterEngine.getDartExecutor(),
                 "com.flutter/EventChannel")
                 .setStreamHandler(mEnventHandle);
-
-        IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-        headsetReceiver = new HeadsetReceiver();
-        registerReceiver(headsetReceiver, filter);
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(headsetReceiver);
     }
 
     MethodChannel.MethodCallHandler mMethodHandle = new MethodChannel.MethodCallHandler() {
@@ -59,27 +52,4 @@ public class MainActivity extends FlutterActivity {
         }
     };
 
-    private class HeadsetReceiver extends BroadcastReceiver { // 耳機
-        @Override public void onReceive(Context context, Intent intent) {
-
-            String action = intent.getAction();
-            if (action == null) {
-                return;
-            } else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
-                int state = intent.getIntExtra("state", -1);
-                switch (state) {
-//                    case 0:
-//                        if(MainActivity.eventSink != null)
-//                            MainActivity.eventSink.success("unplugged");
-//                        break;
-//                    case 1:
-//                        if(MainActivity.eventSink != null)
-//                            MainActivity.eventSink.success("plugged");
-//                        break;
-//                    default:
-//                        Log.d(TAG, "I have no idea what the headset state is");
-                }
-            }
-        }
-    }
 }
