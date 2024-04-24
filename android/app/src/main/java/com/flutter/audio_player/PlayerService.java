@@ -73,13 +73,13 @@ public class PlayerService extends Service {
         String action = intent.getExtras().getString("action");
         if(action.equals("initial")) {
             path = intent.getExtras().getString("path");
-            Log.i(TAG, path);
 
             String s1 = intent.getExtras().getString("list");
-            Log.i(TAG, s1);
-
             String replace = s1.replace("[","").replace("]","");
             list = new ArrayList<String>(Arrays.asList(replace.split(",")));
+
+            Log.i(TAG, path);
+            Log.i(TAG, s1);
         }
 
         return START_REDELIVER_INTENT;

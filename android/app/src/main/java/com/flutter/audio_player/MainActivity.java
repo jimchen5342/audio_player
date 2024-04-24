@@ -8,6 +8,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import io.flutter.Log;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.EventChannel;
@@ -17,6 +18,7 @@ import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class MainActivity extends FlutterActivity {
     public static EventChannel.EventSink eventSink;
+    String TAG = "";
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -45,7 +47,7 @@ public class MainActivity extends FlutterActivity {
                 String path = call.argument("path");
                 intent.putExtra("path", path);
 
-                print(path);
+                Log.i(TAG, path);
 
                 String list = call.argument("list");
                 intent.putExtra("list", list);

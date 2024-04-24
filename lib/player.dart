@@ -54,7 +54,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       setState(() { });
 
       String root = await Archive.root();
-      await methodChannel.invokeMethod('initital', {
+      await methodChannel.invokeMethod('initial', {
         "path": "$root/$path",
         "list": jsonEncode(list)
       });
@@ -125,6 +125,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             onPressed: () => backTo(),
           ),
           title: Text(title,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle( color:Colors.white,)
           ),
           // actions: [
@@ -161,7 +162,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Widget body() {
     return ListView.builder(
       itemCount: list.length,
-      // itemExtent: 50.0, //强制高度为50.0
+      itemExtent: 50.0, //强制高度为50.0
       itemBuilder: (BuildContext context, int index) {
         return Container(
           decoration: BoxDecoration(           // 裝飾內裝元件
@@ -189,24 +190,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                           // ),
                           child: active != index ? null : Icon(Icons.play_arrow, size: 20),
                         ),
-                        Text(list[index],
-                          style: const TextStyle(
-                            // color:Colors.white,
-                            fontSize: 18
-                          )
-                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(list[index],
+                            softWrap: true,
+                            overflow: TextOverflow.ellipsis,
+                            textDirection: TextDirection.ltr,
+                            style: const TextStyle(
+                              // color:Colors.white,
+                              fontSize: 14
+                            )
+                          ),
+                        )
                       ]
                     )
                   ),
                 )
               ),
-              // IconButton(
-              //   iconSize: 20,
-              //   icon: const Icon(Icons.delete),
-              //   onPressed: () {
-            
-              //   },
-              // ),
             ],
           )
         );
@@ -217,13 +217,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   play(index) async {
     active = index;
     _position = const Duration(seconds: 0);
+    setState(() {});
     await methodChannel.invokeMethod('play', {
       // "title": download.title,
       // "author": download.author,
       "mp3": list[index],
       "position": 0
     });
-    setState(() {});
+    
   }
   
   Widget footer() {
