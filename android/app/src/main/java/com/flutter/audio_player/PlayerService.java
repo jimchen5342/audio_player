@@ -102,7 +102,8 @@ public class PlayerService extends Service {
                     jsonObject.put("action", action);
                     jsonObject.put("path", path);
                     jsonObject.put("song", song);
-                    jsonObject.put("position", mPlayer.getCurrentPosition() * 0.001);
+                    jsonObject.put("position", mPlayer == null ? 0 : mPlayer.getCurrentPosition() * 0.001);
+                
                     MainActivity.eventSink.success(jsonObject.toString());
                 }
                 catch(JSONException e) {
@@ -112,7 +113,7 @@ public class PlayerService extends Service {
             if(song.length() == 0)
                 stopSelf();
         }
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
 

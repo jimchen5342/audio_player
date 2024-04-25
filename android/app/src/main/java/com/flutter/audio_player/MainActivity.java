@@ -84,12 +84,14 @@ public class MainActivity extends FlutterActivity {
                 startService(intent);
                 result.success("OK");
             } else if(call.method.equals("pause")) {
-//                mode = "pause";
-//                showNotification();
+                Intent intent = new Intent();
+                intent.putExtra("action", "pause");
+                intent.setClass(MainActivity.this, PlayerService.class);
                 result.success("OK");
             } else if(call.method.equals("stop")) {
-//                mode = "stop";
-//                mNM.cancel(1);
+                Intent intent = new Intent();
+                intent.putExtra("action", "stop");
+                intent.setClass(MainActivity.this, PlayerService.class);
                 result.success("OK");
             } else {
                 result.notImplemented();
