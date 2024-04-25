@@ -25,6 +25,7 @@ class _HomeState extends State<Home> {
   final double _height = 58.0;
   final methodChannel = const MethodChannel('com.flutter/MethodChannel');
   final eventChannel = const EventChannel('com.flutter/EventChannel');
+  StreamSubscription? _streamSubscription;
 
   @override
   void initState() {
@@ -45,14 +46,17 @@ class _HomeState extends State<Home> {
           }
         }
         setState(() {});
-        methodChannel.invokeMethod('information');
-        StreamSubscription _streamSubscription = eventChannel.receiveBroadcastStream().listen((data) async {
-          var json = jsonDecode(data);
-          String action = json["action"] ??= "";
-          if(action == "information") {
-          
-          }
-        });
+        if(list.isNotEmpty) {
+          methodChannel.invokeMethod('information');
+          _streamSubscription = eventChannel.receiveBroadcastStream().listen((data) async {
+            var json = jsonDecode(data);
+            String action = json["action"] ??= "";
+            if(action == "information") {
+              _streamSubscription!.cancel();
+              _streamSubscription = null;
+            }
+          });          
+        }
       }
     });
   }

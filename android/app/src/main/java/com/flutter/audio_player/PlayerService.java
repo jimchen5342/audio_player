@@ -76,10 +76,11 @@ public class PlayerService extends Service {
 
         } else if(action.equals("stop")) {
             stop();
-        } else if(action.equals("information")) {
+        } else if(action.equals("information")) { // 來自 home.dart, app 剛啟動
             if(MainActivity.eventSink != null) {
                 try{
                     JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action", action);
                     jsonObject.put("path", path);
                     jsonObject.put("song", song);
                     jsonObject.put("position", mPlayer.getCurrentPosition() * 0.001);
@@ -89,8 +90,8 @@ public class PlayerService extends Service {
                     e.printStackTrace();
                 }
             }
-
-            stopSelf();
+            if(song.length() == 0)
+                stopSelf();
         }
         return START_STICKY;
     }
@@ -98,7 +99,6 @@ public class PlayerService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
