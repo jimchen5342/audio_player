@@ -55,6 +55,12 @@ public class MainActivity extends FlutterActivity {
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
                 result.success("OK");
+            } else if(call.method.equals("information")) {
+                Intent intent = new Intent();
+                intent.putExtra("action", "information");
+                intent.setClass(MainActivity.this, PlayerService.class);
+                startService(intent);
+                result.success("OK");
             } else if(call.method.equals("play")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "play");

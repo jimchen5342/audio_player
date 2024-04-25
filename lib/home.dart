@@ -49,6 +49,7 @@ class _HomeState extends State<Home> {
         if(list.isNotEmpty) {
           methodChannel.invokeMethod('information');
           _streamSubscription = eventChannel.receiveBroadcastStream().listen((data) async {
+            print(data);
             var json = jsonDecode(data);
             String action = json["action"] ??= "";
             if(action == "information") {
