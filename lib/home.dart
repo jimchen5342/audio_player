@@ -23,6 +23,8 @@ class _HomeState extends State<Home> {
   String active = "", blackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 58.0;
+  final methodChannel = const MethodChannel('com.flutter/MethodChannel');
+  final eventChannel = const EventChannel('com.flutter/EventChannel');
 
   @override
   void initState() {
@@ -43,6 +45,14 @@ class _HomeState extends State<Home> {
           }
         }
         setState(() {});
+        methodChannel.invokeMethod('information');
+        StreamSubscription _streamSubscription = eventChannel.receiveBroadcastStream().listen((data) async {
+          var json = jsonDecode(data);
+          String action = json["action"] ??= "";
+          if(action == "information") {
+          
+          }
+        });
       }
     });
   }
@@ -84,7 +94,8 @@ class _HomeState extends State<Home> {
   refresh() async {
     loading(context, onReady: (_) async {
       Archive archive = Archive();
-      list = await archive.getDirectories(await Archive.root()); 
+      list = await archive.getDirectories(await Archive.root());
+      list.sort((a, b) => b["title"].compareTo(a["title"]));
       await Storage.setJsonList("Directories", list); 
       Navigator.pop(_);
       setState(() {});

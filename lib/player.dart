@@ -12,7 +12,7 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
-  String title = "", playState = "stop";
+  String title = "", path = "", playState = "stop";
   List<String> list = [];
   int active = -1;
 
@@ -44,20 +44,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
-      String path = arg["path"] as String;
-
+      path = arg["path"] as String;
 
       // active = await Storage.getString("activeFile");
       Archive archive = Archive();
       list = await archive.getFiles(path);
-
       setState(() { });
-
-      String root = await Archive.root();
-      await methodChannel.invokeMethod('initial', {
-        "path": "$root/$path",
-        "list": jsonEncode(list)
-      });
     });
   }
 
@@ -104,7 +96,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       } else if(action == "stop") {
         playState = "stop";
       }
-
     });
   }
 
@@ -215,13 +206,18 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   play(index) async {
+    if(playState == "stop") {
+      String root = await Archive.root();
+      await methodChannel.invokeMethod('initial', {
+        "path": "$root/$path",
+        "list": jsonEncode(list)
+      });
+    }
     active = index;
     _position = const Duration(seconds: 0);
     setState(() {});
     await methodChannel.invokeMethod('play', {
-      // "title": download.title,
-      // "author": download.author,
-      "mp3": list[index],
+      "song": list[index],
       "position": 0
     });
     

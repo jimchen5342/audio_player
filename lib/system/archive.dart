@@ -59,7 +59,7 @@ class Archive {
         list.add(title);
       }
     }
-    return list;
+    return list..sort();
   }
 
 

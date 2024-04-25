@@ -18,7 +18,7 @@ import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class MainActivity extends FlutterActivity {
     public static EventChannel.EventSink eventSink;
-    String TAG = "";
+    String TAG = "Player-Main";
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -36,6 +36,7 @@ public class MainActivity extends FlutterActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        MainActivity.eventSink = null;
     }
 
     MethodChannel.MethodCallHandler mMethodHandle = new MethodChannel.MethodCallHandler() {
@@ -47,36 +48,45 @@ public class MainActivity extends FlutterActivity {
                 String path = call.argument("path");
                 intent.putExtra("path", path);
 
-                Log.i(TAG, path);
-
                 String list = call.argument("list");
                 intent.putExtra("list", list);
-
+                // Log.i(TAG, path);
+                // Log.i(TAG, list);
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
+                result.success("OK");
             } else if(call.method.equals("play")) {
-
-//                mode = "play";
-//                title = call.argument("title");
-//                author = call.argument("author");
-//                position = call.argument("position");
-//                showNotification();
-
-
                 Intent intent = new Intent();
                 intent.putExtra("action", "play");
-                intent.putExtra("playList", "");
-                intent.putExtra("fileName", "");
-                intent.putExtra("positionn", 0);
+
+                String song = call.argument("song");
+                intent.putExtra("song", song);
+                // int position = all.argument("position");
+                // intent.putExtra("position", position);
 
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
+                result.success("OK");
+            } else if(call.method.equals("seek")) {
+                Intent intent = new Intent();
+                intent.putExtra("action", "seek");
+
+                int position = call.argument("position");
+                intent.putExtra("position", position);
+
+                intent.setClass(MainActivity.this, PlayerService.class);
+                startService(intent);
+                result.success("OK");
             } else if(call.method.equals("pause")) {
 //                mode = "pause";
 //                showNotification();
+                result.success("OK");
             } else if(call.method.equals("stop")) {
 //                mode = "stop";
 //                mNM.cancel(1);
+                result.success("OK");
+            } else {
+                result.notImplemented();
             }
 
         }
