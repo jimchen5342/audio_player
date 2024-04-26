@@ -85,16 +85,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     _streamSubscription ??= eventChannel.receiveBroadcastStream().listen((data) async {
       var json = jsonDecode(data);
       String action = json["action"] ??= "";
-      if(action == "start") {
+      
+      if(action == "play") {
         playState = "play";
-        _position = Duration(seconds: 0);
-      } else if(action == "play") {
-        playState = "play";
-        _position = Duration(seconds: 100);
+        // duration
+        // _position = Duration(seconds: 100);
       } else if(action == "pause") {
         playState = "pause";
       } else if(action == "stop") {
         playState = "stop";
+        _position = const Duration(seconds: 0);
+      }
+      if(action.isEmpty) {
+        setState(() {});
       }
     });
   }
@@ -217,10 +220,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         "list": jsonEncode(list)
       });
     }
-    playState = "play";
     active = index;
-    _position = const Duration(seconds: 0);
-    setState(() {});
     await methodChannel.invokeMethod('play', {
       "song": list[index],
       "position": position
@@ -246,10 +246,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             onPressed: () async {
               if(playState == "play") {
                 String result = await methodChannel.invokeMethod('pause');
-                playState = "stop";
-                setState(() {});                
               } else {
-                play(active);
+                play(active, position: _position.inSeconds);
               }
             }
           ),
@@ -277,10 +275,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               color: Colors.black54,
               iconSize: 20,
               onPressed: () async {
-                // _controller!.value.isPlaying ? pause() : play();
                 String result = await methodChannel.invokeMethod('stop');
-                playState = "stop";
-                setState(() {});
               }
             ),
         ]
