@@ -126,7 +126,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           //     },
           //   )
           // ],
-          backgroundColor: Colors.blueAccent, 
+          backgroundColor: Colors.deepOrangeAccent, 
         ),
         body:
           PopScope(
@@ -137,15 +137,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               }
               backTo();
             },
-            child: Column(children: [ 
-              Expanded(
-                flex: 1,
-                child: body(),
-              ),
-              if(active > -1)
-                footer()
-            ],),
+            child: Container(
+              color: Colors.black87,
+              child:Column(children: [ 
+                Expanded(
+                  flex: 1,
+                  child: body(),
+                ),
+                if(active > -1)
+                  footer()
+              ]
+            ),
           ),
+        )
       )
     );
   }
@@ -156,9 +160,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       itemExtent: 50.0, //强制高度为50.0
       itemBuilder: (BuildContext context, int index) {
         return Container(
-          decoration: BoxDecoration(           // 裝飾內裝元件
+          decoration: const BoxDecoration(           // 裝飾內裝元件
             // color: Colors.green, // 綠色背景
-            border: Border(bottom: BorderSide(width: 1.5, color: Colors.blue.shade100)), // 藍色邊框
+            border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
           ),
           child: Row(
             children: [
@@ -179,7 +183,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                           // decoration: BoxDecoration(
                               // border: Border.all(width: 1.0, color: Colors.black),
                           // ),
-                          child: active != index ? null : Icon(Icons.play_arrow, size: 20),
+                          child: active != index ? null : const Icon(Icons.play_arrow, size: 20, color: Colors.white),
                         ),
                         Expanded(
                           flex: 1,
@@ -188,8 +192,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                             overflow: TextOverflow.ellipsis,
                             textDirection: TextDirection.ltr,
                             style: const TextStyle(
-                              // color:Colors.white,
-                              fontSize: 14
+                              color:Colors.white,
+                              fontSize: 16
                             )
                           ),
                         )
@@ -205,7 +209,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  play(index) async {
+  play(index, {position = 0}) async {
     if(playState == "stop") {
       String root = await Archive.root();
       await methodChannel.invokeMethod('initial', {
@@ -213,62 +217,74 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         "list": jsonEncode(list)
       });
     }
+    playState = "play";
     active = index;
     _position = const Duration(seconds: 0);
     setState(() {});
     await methodChannel.invokeMethod('play', {
       "song": list[index],
-      "position": 0
+      "position": position
     });
-    
   }
   
   Widget footer() {
-    // _controller!.value.isPlaying ? Icons.pause :
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(playState == "pause" ? Icons.play_arrow : Icons.pause, 
-            size: 30,),
-          color:   Colors.black54,
-          iconSize: 20,
-          onPressed: () {
-            if(playState == "pause") {
-              methodChannel.invokeMethod('play');
-            } else {
-              methodChannel.invokeMethod('pause');
-            }
-          }
-        ),
-        Expanded(
-          flex: 1,
-          child: Slider(
-            value: _position.inSeconds.toDouble(),
-            min: 0,
-            max: _duration.inSeconds.toDouble(),
-            label: _position.toString(),
-            onChanged: (double value) {
-              methodChannel.invokeMethod('seek', {
-                // "title": download.title,
-                // "author": download.author,
-                "position": value
-              });
-              _position = Duration(seconds: value.toInt());
-              setState((){});
-            }
-          ),
-        ),
-        if(playState == "play")
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      decoration: const BoxDecoration(           // 裝飾內裝元件
+            // color: Colors.green, // 綠色背景
+        border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+      ),
+      child: Row(
+        children: [
           IconButton(
-            icon: const Icon( Icons.stop,  size: 30,),
-            color: Colors.black54,
+            icon: Icon(playState != "play" ? Icons.play_arrow : Icons.pause, 
+              size: 30,
+              color: Colors.white
+            ),
+            color:   Colors.black54,
             iconSize: 20,
-            onPressed: () {
-              // _controller!.value.isPlaying ? pause() : play();
-              methodChannel.invokeMethod('stop');
+            onPressed: () async {
+              if(playState == "play") {
+                String result = await methodChannel.invokeMethod('pause');
+                playState = "stop";
+                setState(() {});                
+              } else {
+                play(active);
+              }
             }
           ),
-      ]
+          Expanded(
+            flex: 1,
+            child: Slider(
+              value: _position.inSeconds.toDouble(),
+              min: 0,
+              max: _duration.inSeconds.toDouble(),
+              label: _position.toString(),
+              onChanged: (double value) {
+                methodChannel.invokeMethod('seek', {
+                  // "title": download.title,
+                  // "author": download.author,
+                  "position": value
+                });
+                _position = Duration(seconds: value.toInt());
+                setState((){});
+              }
+            ),
+          ),
+          if(playState != "stop")
+            IconButton(
+              icon: const Icon( Icons.stop,  size: 30, color: Colors.white),
+              color: Colors.black54,
+              iconSize: 20,
+              onPressed: () async {
+                // _controller!.value.isPlaying ? pause() : play();
+                String result = await methodChannel.invokeMethod('stop');
+                playState = "stop";
+                setState(() {});
+              }
+            ),
+        ]
+      )
     );
   }
 }

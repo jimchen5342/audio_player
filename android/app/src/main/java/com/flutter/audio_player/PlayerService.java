@@ -51,8 +51,6 @@ public class PlayerService extends Service {
         IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         headsetReceiver = new HeadsetReceiver();
         registerReceiver(headsetReceiver, filter);
-
-
     }
 
     @Override
@@ -67,10 +65,10 @@ public class PlayerService extends Service {
         System.gc();
     }
 
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getExtras().getString("action");
+        Log.i(TAG, "action: " + action);
         if(action.equals("initial")) {
             path = intent.getExtras().getString("path");
             String s1 = intent.getExtras().getString("list");
@@ -166,7 +164,7 @@ public class PlayerService extends Service {
                     e.printStackTrace();
                 }
             }
-            mThreadHandler.post(runnableTimer);
+            // mThreadHandler.post(runnableTimer);
         } catch (Exception e) {
             Log.i(TAG, e.getMessage());
         }
@@ -227,7 +225,7 @@ public class PlayerService extends Service {
                 }
                 Date now = new Date();
                 long l = (now.getTime() - dateStart.getTime()) / 1000;
-                Log.i(TAG, "second: " + l);
+                // Log.i(TAG, "second: " + l);
 
                 if(sleepSecond > 0 && l > sleepSecond) {
                     stop();

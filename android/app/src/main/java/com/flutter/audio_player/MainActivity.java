@@ -55,13 +55,15 @@ public class MainActivity extends FlutterActivity {
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
                 result.success("OK");
-            } else if(call.method.equals("information")) {
+            }
+            else if(call.method.equals("information")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "information");
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
                 result.success("OK");
-            } else if(call.method.equals("play")) {
+            }
+            else if(call.method.equals("play")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "play");
 
@@ -73,26 +75,30 @@ public class MainActivity extends FlutterActivity {
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
                 result.success("OK");
-            } else if(call.method.equals("seek")) {
+            }
+            else if(call.method.equals("seek")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "seek");
-
                 int position = call.argument("position");
                 intent.putExtra("position", position);
-
                 intent.setClass(MainActivity.this, PlayerService.class);
                 startService(intent);
+
                 result.success("OK");
-            } else if(call.method.equals("pause")) {
+            }
+            else if(call.method.equals("pause")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "pause");
                 intent.setClass(MainActivity.this, PlayerService.class);
-                result.success("OK");
-            } else if(call.method.equals("stop")) {
+                startService(intent);
+                result.success("pause");
+            }
+            else if(call.method.equals("stop")) {
                 Intent intent = new Intent();
                 intent.putExtra("action", "stop");
                 intent.setClass(MainActivity.this, PlayerService.class);
-                result.success("OK");
+                startService(intent);
+                result.success("stop");
             } else {
                 result.notImplemented();
             }

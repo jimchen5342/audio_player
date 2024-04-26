@@ -22,7 +22,7 @@ class _HomeState extends State<Home> {
   List<dynamic> list = [];
   String active = "", blackList = "";
   final ScrollController _controller = ScrollController();
-  final double _height = 58.0;
+  final double _height = 70.0;
   final methodChannel = const MethodChannel('com.flutter/MethodChannel');
   final eventChannel = const EventChannel('com.flutter/EventChannel');
   StreamSubscription? _streamSubscription;
@@ -162,7 +162,7 @@ class _HomeState extends State<Home> {
                 },
               ),
           ],
-          backgroundColor: Colors.blueAccent, 
+          backgroundColor: Colors.deepOrangeAccent, 
         ),
         body: PopScope(
           canPop: false,
@@ -173,8 +173,8 @@ class _HomeState extends State<Home> {
             backTo();
           },
           child: Container(
-            // color: Colors.blueAccent,
-            child:  body()
+            color: Colors.black87,
+            child: body()
           ),
         ),
       )
@@ -188,9 +188,9 @@ class _HomeState extends State<Home> {
       itemBuilder: (BuildContext context, int index) {
         String path = "'${list[index]["path"]}'";
         return Container(
-          decoration: BoxDecoration(           // 裝飾內裝元件
-            color: active == list[index]["path"] ? Colors.lightBlueAccent.shade100 : Colors.transparent,
-            border: Border(bottom: BorderSide(width: 1.5, color: Colors.blue.shade100)), // 藍色邊框
+          decoration: BoxDecoration(
+            color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
+            border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
           ),
           child: Row(
             children: [
@@ -204,24 +204,25 @@ class _HomeState extends State<Home> {
                     await Storage.setString("activeDirectory", active);
                   },
                   child: Container(
+                    padding: const EdgeInsets.only(left: 5),
                     // padding: const EdgeInsets.all(5),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    // padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("${list[index]["title"]}",
-                          style: TextStyle(
-                            color: active == list[index]["path"] ?Colors.white : null,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16
+                          style: const TextStyle(
+                            color: Colors.white, // active == list[index]["path"] ? Colors.white : null,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18
                           )
                         ),
                         if(list[index]["count"] != null)
                           Text("   ${list[index]["count"]}首",
-                            style: TextStyle(
-                              color: active == list[index]["path"] ?Colors.white : null,
-                              fontSize: 12
+                            style: const TextStyle(
+                              color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
+                              fontSize: 14
                             )
                           )
                       ]
