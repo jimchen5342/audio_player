@@ -52,7 +52,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       setState(() { });
     });
   }
-
+// 
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
@@ -219,7 +219,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         "path": "$root/$path",
         "list": jsonEncode(list)
       });
+      print("$root/$path/${list[0]}");
     }
+    
     active = index;
     await methodChannel.invokeMethod('play', {
       "song": list[index],
