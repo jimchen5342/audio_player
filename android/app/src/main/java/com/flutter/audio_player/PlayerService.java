@@ -79,21 +79,28 @@ public class PlayerService extends Service {
             mThread = new HandlerThread(TAG);
             mThread.start();
             mThreadHandler = new Handler(mThread.getLooper());
-        } else if(action.equals("play")) {
+        }
+        else if(action.equals("play")) {
             String s1 = intent.getExtras().getString("song");
             play(s1);
-        } else if(action.equals("seek")) {
+        }
+        else if(action.equals("seek")) {
             int position = intent.getExtras().getInt("position");
             seek(position);
-        } else if(action.equals("pause")) {
+        }
+        else if(action.equals("pause")) {
             pause();
-        } else if(action.equals("next")) {
+        }
+        else if(action.equals("next")) {
             next();
-        } else if(action.equals("prev")) {
+        }
+        else if(action.equals("prev")) {
             prev();
-        } else if(action.equals("stop")) {
+        }
+        else if(action.equals("stop")) {
             stop();
-        } else if(action.equals("information")) { // 來自 home.dart, app 剛啟動
+        }
+        else if(action.equals("information")) { // 來自 home.dart, app 剛啟動
             if(MainActivity.eventSink != null) {
                 try{
                     JSONObject jsonObject = new JSONObject();
@@ -111,9 +118,9 @@ public class PlayerService extends Service {
             if(song.length() == 0)
                 stopSelf();
         }
-        return START_NOT_STICKY;
+//        return START_NOT_STICKY;
+        return START_REDELIVER_INTENT;
     }
-
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -124,7 +131,17 @@ public class PlayerService extends Service {
 
     }
     void next() {
-
+        int index = -1;
+        for (int i = 0; i < list.size(); i++) {
+            if(list.get(i).equals(song)) {
+                if(i == list.size() - 1) {
+                    index = 0;
+                } else {
+                    index = i + 1;
+                }
+            }
+        }
+        play(list.get(index));
     }
 
     void play(String s1) {
@@ -138,7 +155,8 @@ public class PlayerService extends Service {
                     mPlayer = null;
                 }
                 song = s1;
-            } else
+            }
+            else
                 return;
             mPlayer = new MediaPlayer();
             mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
