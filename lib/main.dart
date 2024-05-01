@@ -26,4 +26,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-// bool dirty = await Navigator.pushNamed(context, '/swing', arguments: "") as bool;
