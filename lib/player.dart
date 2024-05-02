@@ -220,6 +220,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         "list": jsonEncode(list)
       });
       print("$root/$path/${list[0]}");
+      // /storage/emulated/0/Music/開發測試  MP3/beep1.mp3
+
     }
     
     active = index;
