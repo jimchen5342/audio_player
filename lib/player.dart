@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:audio_player/system/module.dart';
+import 'package:audio_service/audio_service.dart';
 
 class Player extends StatefulWidget {
   // String directory;
