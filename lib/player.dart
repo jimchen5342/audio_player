@@ -3,11 +3,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:audio_player/system/module.dart';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:rxdart/rxdart.dart';
+
+AudioPlayerHandler? _audioHandler;
+List<MediaItem> songs = [];
 
 class Player extends StatefulWidget {
-  // String directory;
   Player({Key? key}) : super(key: key);
+
   @override
   _PlayerState createState() => _PlayerState();
 }
@@ -22,7 +28,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   final methodChannel = const MethodChannel('com.flutter/MethodChannel');
   final eventChannel = const EventChannel('com.flutter/EventChannel');
-  StreamSubscription? _streamSubscription;
 
   // methodChannel.invokeMethod('finish');
   /*
@@ -40,20 +45,43 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 注册监听器
-    streamSubscription();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
       path = arg["path"] as String;
-
-      // active = await Storage.getString("activeFile");
-      Archive archive = Archive();
-      list = await archive.getFiles(path);
-      setState(() { });
+      initial();
     });
   }
-// 
+
+  initial() async {
+    String root = await Archive.root();
+    Archive archive = Archive();
+    list = await archive.getFiles(path);
+    for(var i = 0; i < list.length; i++) {
+      var item = MediaItem(
+        id: "$root/$path/${list[i]}",
+        title: list[i].replaceAll(".mp3", "").replaceAll(".mp4", ""),
+        album: title,
+        // artist: 'Artist name',
+        // duration: const Duration(milliseconds: 123456),
+        // artUri: Uri.parse('https://example.com/album.jpg'),
+      );
+      songs.add(item);
+    }
+    
+    _audioHandler ??= await AudioService.init(
+      builder: () => AudioPlayerHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
+        androidNotificationChannelName: 'Audio playback',
+        androidNotificationOngoing: true,
+      ),
+    );
+    _audioHandler!.init();
+    setState(() { });
+  }
+
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
@@ -62,6 +90,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   void reassemble() async { // develope mode
     super.reassemble();
+    // initial();
   }
 
   @override
@@ -73,34 +102,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if(AppLifecycleState.resumed == state) {
-      streamSubscription();
     }
     else if(AppLifecycleState.paused == state) {
-      _streamSubscription?.cancel();
-      _streamSubscription = null;
       debugPrint("didChangeAppLifecycleState: $state");
     }
-  }
-
-  streamSubscription() { // 事件監聽
-    _streamSubscription ??= eventChannel.receiveBroadcastStream().listen((data) async {
-      var json = jsonDecode(data);
-      String action = json["action"] ??= "";
-      
-      if(action == "play") {
-        playState = "play";
-        // duration
-        // _position = Duration(seconds: 100);
-      } else if(action == "pause") {
-        playState = "pause";
-      } else if(action == "stop") {
-        playState = "stop";
-        _position = const Duration(seconds: 0);
-      }
-      if(action.isEmpty) {
-        setState(() {});
-      }
-    });
   }
 
   backTo() {
@@ -221,8 +226,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         "list": jsonEncode(list)
       });
       print("$root/$path/${list[0]}");
-      // /storage/emulated/0/Music/開發測試  MP3/beep1.mp3
-
     }
     
     active = index;
@@ -286,5 +289,87 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         ]
       )
     );
+  }
+
+}
+
+
+class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
+  final _player = AudioPlayer();
+  final currentSong = BehaviorSubject<MediaItem>();
+
+  void init() {
+    _player.playbackEventStream.listen(_broadcastState);
+    queue.add(songs!);
+    _player.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) skipToNext();
+    });
+
+    setSong(songs!.first);
+  }
+
+  Future<void> setSong(MediaItem song) async {
+    currentSong.add(song);
+    mediaItem.add(song);
+    await _player.setAudioSource(
+      ProgressiveAudioSource(Uri.parse(song.id)), // 
+    );
+  }
+
+  @override
+  Future<void> play() => _player.play();
+
+  @override
+  Future<void> pause() => _player.pause();
+
+  @override
+  Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> stop() async {
+    await _player.stop();
+    await playbackState.firstWhere(
+        (state) => state.processingState == AudioProcessingState.idle);
+  }
+
+  @override
+  Future<void> skipToQueueItem(int index) async {
+    if (index <= 0 || index >= queue.value.length) {
+      // TODO: remove this when QueueHandler._skip is fixed
+      return;
+    }
+    // await setSong(_songs![index]);
+  }
+
+  /// Broadcasts the current state to all clients.
+  void _broadcastState(PlaybackEvent event) {
+    final playing = _player.playing;
+    final queueIndex = songs!.indexOf(currentSong.value);
+    playbackState.add(playbackState.value.copyWith(
+      controls: [
+        MediaControl.skipToPrevious,
+        if (playing) MediaControl.pause else MediaControl.play,
+        MediaControl.stop,
+        MediaControl.skipToNext,
+      ],
+      systemActions: const {
+        MediaAction.seek,
+        MediaAction.seekForward,
+        MediaAction.seekBackward,
+      },
+      androidCompactActionIndices: const [0, 1, 3],
+      processingState: const {
+        ProcessingState.idle: AudioProcessingState.idle,
+        ProcessingState.loading: AudioProcessingState.loading,
+        ProcessingState.buffering: AudioProcessingState.buffering,
+        ProcessingState.ready: AudioProcessingState.ready,
+        ProcessingState.completed: AudioProcessingState.completed,
+      }[_player.processingState]!,
+      playing: playing,
+      updatePosition: _player.position,
+      bufferedPosition: _player.bufferedPosition,
+      speed: _player.speed,
+      queueIndex: queueIndex,
+    ));
   }
 }

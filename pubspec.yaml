@@ -38,8 +38,9 @@ dependencies:
   # fluttertoast: ^8.2.5
   intl: ^0.19.0
   audio_service: ^0.18.13
+  just_audio: ^0.9.36
 
-  #https://pub.dev/packages/audio_service
+  # https://pub.dev/packages/audio_service
   
 
 dev_dependencies:
