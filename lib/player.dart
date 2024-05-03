@@ -20,9 +20,7 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "", playState = "stop";
-  List<String> list = [];
   int active = -1;
-
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
 
@@ -57,14 +55,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   initial() async {
     String root = await Archive.root();
     Archive archive = Archive();
-    list = await archive.getFiles(path);
+    List<String> list = await archive.getFiles(path);
+    final player = AudioPlayer();
     for(var i = 0; i < list.length; i++) {
+      var fullName = "$root/$path/${list[i]}";
+      var duration = await player.setUrl(fullName);
       var item = MediaItem(
-        id: "$root/$path/${list[i]}",
+        id: fullName,
         title: list[i].replaceAll(".mp3", "").replaceAll(".mp4", ""),
         album: title,
         // artist: 'Artist name',
-        // duration: const Duration(milliseconds: 123456),
+        duration: duration,
         // artUri: Uri.parse('https://example.com/album.jpg'),
       );
       songs.add(item);
@@ -153,8 +154,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                   flex: 1,
                   child: body(),
                 ),
-                if(active > -1)
-                  footer()
+                if(songs.isNotEmpty)
+                  _buildControls(),
+                if(_audioHandler != null)
+                  _buildCurrentSong(),
               ]
             ),
           ),
@@ -165,7 +168,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Widget body() {
     return ListView.builder(
-      itemCount: list.length,
+      itemCount: songs.length,
       itemExtent: 50.0, //强制高度为50.0
       itemBuilder: (BuildContext context, int index) {
         return Container(
@@ -179,8 +182,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 flex: 1,
                 child: InkWell (
                   onTap: () {
-                    play(index);
-                      // Navigator.pushNamed(context, '/player', arguments: list[index]);
+                    _audioHandler!.setSong(songs[index]);
+                    _audioHandler!.play();
                   },
                   child: Container(
                     padding: const EdgeInsets.all(10),
@@ -196,7 +199,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                         ),
                         Expanded(
                           flex: 1,
-                          child: Text(list[index],
+                          child: Text(songs[index].title,
                             softWrap: true,
                             overflow: TextOverflow.ellipsis,
                             textDirection: TextDirection.ltr,
@@ -217,77 +220,43 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       },
     );
   }
-
-  play(index, {position = 0}) async {
-    if(playState == "stop") {
-      String root = await Archive.root();
-      await methodChannel.invokeMethod('initial', {
-        "path": "$root/$path",
-        "list": jsonEncode(list)
-      });
-      print("$root/$path/${list[0]}");
-    }
-    
-    active = index;
-    await methodChannel.invokeMethod('play', {
-      "song": list[index],
-      "position": position
-    });
-  }
   
-  Widget footer() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      decoration: const BoxDecoration(           // 裝飾內裝元件
-            // color: Colors.green, // 綠色背景
-        border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(playState != "play" ? Icons.play_arrow : Icons.pause, 
-              size: 30,
-              color: Colors.white
-            ),
-            color:   Colors.black54,
-            iconSize: 20,
-            onPressed: () async {
-              if(playState == "play") {
-                String result = await methodChannel.invokeMethod('pause');
-              } else {
-                play(active, position: _position.inSeconds);
-              }
-            }
-          ),
-          Expanded(
-            flex: 1,
-            child: Slider(
-              value: _position.inSeconds.toDouble(),
-              min: 0,
-              max: _duration.inSeconds.toDouble(),
-              label: _position.toString(),
-              onChanged: (double value) {
-                methodChannel.invokeMethod('seek', {
-                  // "title": download.title,
-                  // "author": download.author,
-                  "position": value
-                });
-                _position = Duration(seconds: value.toInt());
-                setState((){});
-              }
-            ),
-          ),
-          if(playState != "stop")
-            IconButton(
-              icon: const Icon( Icons.stop,  size: 30, color: Colors.white),
-              color: Colors.black54,
-              iconSize: 20,
-              onPressed: () async {
-                String result = await methodChannel.invokeMethod('stop');
-              }
-            ),
-        ]
-      )
+  IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
+    icon: Icon(iconData),
+    onPressed: onPressed,
+  );
+  Widget _buildControls() {
+    return StreamBuilder<bool>(
+      stream:
+          _audioHandler!.playbackState.map((state) => state.playing).distinct(),
+      builder: (context, snapshot) {
+        final playing = snapshot.data ?? false;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _button(Icons.skip_previous, _audioHandler!.skipToPrevious),
+            if (playing)
+              _button(Icons.pause, _audioHandler!.pause)
+            else
+              _button(Icons.play_arrow, _audioHandler!.play),
+            _button(Icons.stop, _audioHandler!.stop),
+            _button(Icons.skip_next, _audioHandler!.skipToNext),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCurrentSong() {
+    return StreamBuilder<MediaItem?>(
+      stream: _audioHandler!.currentSong,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox();
+        }
+        final song = snapshot.data!;
+        return Text(song.title);
+      },
     );
   }
 
@@ -300,12 +269,12 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   void init() {
     _player.playbackEventStream.listen(_broadcastState);
-    queue.add(songs!);
+    queue.add(songs);
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) skipToNext();
     });
 
-    setSong(songs!.first);
+    setSong(songs.first);
   }
 
   Future<void> setSong(MediaItem song) async {
@@ -338,7 +307,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       // TODO: remove this when QueueHandler._skip is fixed
       return;
     }
-    // await setSong(_songs![index]);
+    await setSong(songs![index]);
   }
 
   /// Broadcasts the current state to all clients.
