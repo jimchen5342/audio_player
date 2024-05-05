@@ -19,25 +19,14 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
-  String title = "", path = "", playState = "stop";
-  int active = -1;
+  String title = "", path = "";
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
+  bool isReady = false;
+  int active = -1;
 
   final methodChannel = const MethodChannel('com.flutter/MethodChannel');
   final eventChannel = const EventChannel('com.flutter/EventChannel');
-
-  // methodChannel.invokeMethod('finish');
-  /*
-  await methodChannel.invokeMethod('play', {
-      "title": download.title,
-      "author": download.author,
-      "position": ""
-    });
-    eventChannel.receiveBroadcastStream().listen((data) async {
-
-      });
-   */
 
   @override
   void initState() {
@@ -48,7 +37,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
       path = arg["path"] as String;
-      initial();
+      setState(() {});
+      String active = await Storage.getString("playDirectory");
+      if(songs.isEmpty || active != path) {
+        songs = [];
+        initial();
+        await Storage.setString("playDirectory", path);
+      } else {
+        isReady = true;
+        setState(() {});
+      }
     });
   }
 
@@ -64,9 +62,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         id: fullName,
         title: list[i].replaceAll(".mp3", "").replaceAll(".mp4", ""),
         album: title,
-        // artist: 'Artist name',
         duration: duration,
-        // artUri: Uri.parse('https://example.com/album.jpg'),
       );
       songs.add(item);
     }
@@ -80,6 +76,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       ),
     );
     _audioHandler!.init();
+    isReady = true;
     setState(() { });
   }
 
@@ -115,6 +112,27 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   @override
   Widget build(BuildContext context) {
+    final Widget child;
+    if(isReady) {
+      child =  Container(
+        color: Colors.black87,
+        child:Column(children: [ 
+                Expanded(
+                  flex: 1,
+                  child: body(),
+                ),
+                if(_audioHandler != null && songs.isNotEmpty)
+                  _buildControls(),
+                if(_audioHandler != null)
+                  _buildCurrentSong(),
+              ]
+            ),
+      );
+    } else {
+      child = const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -138,8 +156,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           // ],
           backgroundColor: Colors.deepOrangeAccent, 
         ),
-        body:
-          PopScope(
+        body: PopScope(
             canPop: false,
             onPopInvoked: (bool didPop) {
               if (didPop) {
@@ -147,20 +164,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               }
               backTo();
             },
-            child: Container(
-              color: Colors.black87,
-              child:Column(children: [ 
-                Expanded(
-                  flex: 1,
-                  child: body(),
-                ),
-                if(songs.isNotEmpty)
-                  _buildControls(),
-                if(_audioHandler != null)
-                  _buildCurrentSong(),
-              ]
-            ),
-          ),
+            child: child
         )
       )
     );
@@ -222,7 +226,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
   
   IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
-    icon: Icon(iconData),
+    icon: Icon(iconData, color: Colors.white,),
     onPressed: onPressed,
   );
   Widget _buildControls() {
@@ -255,20 +259,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           return const SizedBox();
         }
         final song = snapshot.data!;
-        return Text(song.title);
+        return Text(song.title, style: TextStyle( color:Colors.white,));
       },
     );
   }
-
 }
-
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _player = AudioPlayer();
   final currentSong = BehaviorSubject<MediaItem>();
 
-  void init() {
+  void init() async {
     _player.playbackEventStream.listen(_broadcastState);
+    if(queue.value.isNotEmpty) {
+      stop();
+      queue.value.clear();
+    }
+    
     queue.add(songs);
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) skipToNext();
@@ -304,16 +311,16 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> skipToQueueItem(int index) async {
     if (index <= 0 || index >= queue.value.length) {
-      // TODO: remove this when QueueHandler._skip is fixed
       return;
     }
-    await setSong(songs![index]);
+    await setSong(songs[index]);
   }
 
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
-    final queueIndex = songs!.indexOf(currentSong.value);
+    
+    final queueIndex = songs.indexOf(currentSong.value);
     playbackState.add(playbackState.value.copyWith(
       controls: [
         MediaControl.skipToPrevious,
@@ -342,3 +349,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     ));
   }
 }
+
+ // methodChannel.invokeMethod('finish');
+  /*
+  await methodChannel.invokeMethod('play', {
+      "title": download.title,
+      "author": download.author,
+      "position": ""
+    });
+    eventChannel.receiveBroadcastStream().listen((data) async {
+
+      });
+   */
