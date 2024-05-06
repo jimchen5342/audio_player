@@ -23,7 +23,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
   bool isReady = false;
-  int rowIndex = -1;
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -123,18 +122,27 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Widget build(BuildContext context) {
     final Widget child;
     if(isReady) {
-      child = Container(
-        color: Colors.black87,
-        child: Column(children: [ 
-            Expanded(
-              flex: 1,
-              child: body(),
-            ),
-            if(_audioHandler != null && songs.isNotEmpty)
-              _buildControls(),
-          ]
-        ),
-      );
+      child = StreamBuilder<MediaItem?>(
+      stream: _audioHandler!.currentSong,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox();
+        }
+        final song = snapshot.data!;
+
+        return Container(
+          color: Colors.black87,
+          child: Column(children: [ 
+              Expanded(
+                flex: 1,
+                child: body(song),
+              ),
+              if(_audioHandler != null && songs.isNotEmpty)
+                _buildControls(),
+            ]
+          ),
+        );
+      });
     } else {
       child = const Center(
         child: CircularProgressIndicator(),
@@ -177,22 +185,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Widget body() {
-    return StreamBuilder<MediaItem?>(
-      stream: _audioHandler!.currentSong,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox();
-        }
-        final song = snapshot.data!;
-        
-        return ListView.builder(
-          itemCount: songs.length,
-          itemExtent: 50.0, //强制高度为50.0
-          itemBuilder: (BuildContext context, int index) {
-            return _buildRow(songs[index], song.id == songs[index].id); 
-          },
-        );
+  Widget body(MediaItem song) {
+    return ListView.builder(
+      itemCount: songs.length,
+      itemExtent: 50.0, //强制高度为50.0
+      itemBuilder: (BuildContext context, int index) {
+        return _buildRow(songs[index], song.id == songs[index].id); 
       },
     );
   }
@@ -252,7 +250,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       builder: (context, snapshot) {
         final playing = snapshot.data ?? false;
         final queueIndex = songs.indexOf(_audioHandler!.currentSong.value);
-        print("queueIndex: $queueIndex, ${songs.length}, rowIndex: $rowIndex");
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -316,7 +313,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    if (index <= 0 || index >= queue.value.length) {
+    if (index < 0 || index >= queue.value.length) {
       return;
     }
     await setSong(songs[index]);
