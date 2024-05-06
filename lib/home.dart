@@ -23,10 +23,7 @@ class _HomeState extends State<Home> {
   String active = "", blackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
-  final methodChannel = const MethodChannel('com.flutter/MethodChannel');
-  final eventChannel = const EventChannel('com.flutter/EventChannel');
-  StreamSubscription? _streamSubscription;
-
+  
   @override
   void initState() {
     super.initState();
@@ -46,18 +43,6 @@ class _HomeState extends State<Home> {
           }
         }
         setState(() {});
-        if(list.isNotEmpty) {
-          methodChannel.invokeMethod('information');
-          _streamSubscription = eventChannel.receiveBroadcastStream().listen((data) async {
-            print(data);
-            var json = jsonDecode(data);
-            String action = json["action"] ??= "";
-            if(action == "information") {
-              _streamSubscription!.cancel();
-              _streamSubscription = null;
-            }
-          });          
-        }
       }
     });
   }
@@ -100,7 +85,7 @@ class _HomeState extends State<Home> {
     loading(context, onReady: (_) async {
       Archive archive = Archive();
       list = await archive.getDirectories(await Archive.root());
-      list.sort((a, b) => b["title"].compareTo(a["title"]));
+      list.sort((a, b) => a["title"].compareTo(b["title"]));
       await Storage.setJsonList("Directories", list); 
       Navigator.pop(_);
       setState(() {});
@@ -267,7 +252,7 @@ class _HomeState extends State<Home> {
   void _animateToIndex(int index) {
     _controller.animateTo(
       index * _height,
-      duration: Duration(seconds: 2),
+      duration: const Duration(seconds: 2),
       curve: Curves.fastOutSlowIn,
     );
   }
