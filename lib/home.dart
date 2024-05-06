@@ -1,14 +1,7 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
-import 'package:intl/intl.dart';
 import 'package:audio_player/system/module.dart';
 
 class Home extends StatefulWidget {
@@ -37,7 +30,9 @@ class _HomeState extends State<Home> {
         if(list.length > 10) {
           for(var i = 0; i < list.length; i++) {
             if(active == list[i]["path"]){
-              _animateToIndex(i);
+              setTimeout(() => {
+                _animateToIndex(i)
+              }, 600);
               break;
             }
           }
@@ -218,7 +213,7 @@ class _HomeState extends State<Home> {
               if(blackList.isEmpty)
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.delete, color: active == list[index]["path"] ?Colors.white : null),
+                  icon: Icon(Icons.delete, color: Colors.white),
                   onPressed: () {
                     blackList = path;
                     setState(() { });
@@ -227,7 +222,7 @@ class _HomeState extends State<Home> {
               if(blackList.isNotEmpty && blackList.contains(path))
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.check_box_rounded, color: active == list[index]["path"] ?Colors.white : null),
+                  icon: Icon(Icons.check_box_rounded, color: Colors.white),
                   onPressed: () {
                     blackList = blackList.replaceAll(path, "");
                     setState(() { });
@@ -236,7 +231,7 @@ class _HomeState extends State<Home> {
               if(blackList.isNotEmpty && ! blackList.contains(path))
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.check_box_outline_blank_rounded, color: active == list[index]["path"] ?Colors.white : null),
+                  icon: Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
                   onPressed: () {
                     blackList += path;
                     setState(() { });

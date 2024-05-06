@@ -26,7 +26,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
-      icon: Icon(iconData, color: Colors.white,),
+      icon: Icon(iconData, color: Colors.white, size: 24),
       onPressed: onPressed,
     );
 
@@ -66,6 +66,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     for(var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
       var duration = await player.setUrl(fullName);
+    
       var item = MediaItem(
         id: fullName,
         title: list[i].replaceAll(".mp3", "").replaceAll(".mp4", ""),
