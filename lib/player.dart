@@ -26,12 +26,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
-      icon: Icon(iconData, color: Colors.white, size: 24),
+      icon: Icon(iconData, color: Colors.white, size: 30),
       onPressed: onPressed,
     );
 
     return Container(
-      width: 40,
+      width: 60,
+      height: 60,
+      // decoration: BoxDecoration(
+      //   border: Border.all(color: Colors.blueAccent),
+      //   borderRadius: BorderRadius.circular(10),
+      // ),
       child: visible ? btn : null
     );
   }
@@ -197,6 +202,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget _buildRow(MediaItem song, bool active) {
+    var duration = "${song.duration}".split(".")[0];
+    if(duration.startsWith("0:")) {
+      duration = duration.substring(2);
+    }
     return Container(
       decoration: const BoxDecoration(           // 裝飾內裝元件
         // color: Colors.green, // 綠色背景
@@ -231,9 +240,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                         textDirection: TextDirection.ltr,
                         style: const TextStyle(
                           color:Colors.white,
-                          fontSize: 16
+                          fontSize: 18
                         )
                       ),
+                    ),
+                    Padding(padding: const EdgeInsets.only(left: 8.0),
+                      child: Text(duration,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(
+                          color:Colors.white,
+                          fontSize: 14
+                        )
+                      )
                     )
                   ]
                 )
