@@ -23,10 +23,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Duration _duration = Duration(seconds: 1000);
   Duration _position = Duration(seconds: 100);
   bool isReady = false;
-  int active = -1;
+  int rowIndex = -1;
 
-  final methodChannel = const MethodChannel('com.flutter/MethodChannel');
-  final eventChannel = const EventChannel('com.flutter/EventChannel');
+  Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
+    Widget btn = IconButton(
+      icon: Icon(iconData, color: Colors.white,),
+      onPressed: onPressed,
+    );
+
+    return Container(
+      width: 40,
+      child: visible ? btn : null
+    );
+  }
 
   @override
   void initState() {
@@ -70,8 +79,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     _audioHandler ??= await AudioService.init(
       builder: () => AudioPlayerHandler(),
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
-        androidNotificationChannelName: 'Audio playback',
+        androidNotificationChannelId: 'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
+        androidNotificationChannelName: '音樂播放器',
         androidNotificationOngoing: true,
       ),
     );
@@ -114,19 +123,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Widget build(BuildContext context) {
     final Widget child;
     if(isReady) {
-      child =  Container(
+      child = Container(
         color: Colors.black87,
-        child:Column(children: [ 
-                Expanded(
-                  flex: 1,
-                  child: body(),
-                ),
-                if(_audioHandler != null && songs.isNotEmpty)
-                  _buildControls(),
-                if(_audioHandler != null)
-                  _buildCurrentSong(),
-              ]
+        child: Column(children: [ 
+            Expanded(
+              flex: 1,
+              child: body(),
             ),
+            if(_audioHandler != null && songs.isNotEmpty)
+              _buildControls(),
+          ]
+        ),
       );
     } else {
       child = const Center(
@@ -171,87 +178,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget body() {
-    return ListView.builder(
-      itemCount: songs.length,
-      itemExtent: 50.0, //强制高度为50.0
-      itemBuilder: (BuildContext context, int index) {
-        return Container(
-          decoration: const BoxDecoration(           // 裝飾內裝元件
-            // color: Colors.green, // 綠色背景
-            border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: InkWell (
-                  onTap: () {
-                    _audioHandler!.setSong(songs[index]);
-                    _audioHandler!.play();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 20,
-                          margin: const EdgeInsets.only(right: 5),
-                          // decoration: BoxDecoration(
-                              // border: Border.all(width: 1.0, color: Colors.black),
-                          // ),
-                          child: active != index ? null : const Icon(Icons.play_arrow, size: 20, color: Colors.white),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Text(songs[index].title,
-                            softWrap: true,
-                            overflow: TextOverflow.ellipsis,
-                            textDirection: TextDirection.ltr,
-                            style: const TextStyle(
-                              color:Colors.white,
-                              fontSize: 16
-                            )
-                          ),
-                        )
-                      ]
-                    )
-                  ),
-                )
-              ),
-            ],
-          )
-        );
-      },
-    );
-  }
-  
-  IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
-    icon: Icon(iconData, color: Colors.white,),
-    onPressed: onPressed,
-  );
-  Widget _buildControls() {
-    return StreamBuilder<bool>(
-      stream:
-          _audioHandler!.playbackState.map((state) => state.playing).distinct(),
-      builder: (context, snapshot) {
-        final playing = snapshot.data ?? false;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _button(Icons.skip_previous, _audioHandler!.skipToPrevious),
-            if (playing)
-              _button(Icons.pause, _audioHandler!.pause)
-            else
-              _button(Icons.play_arrow, _audioHandler!.play),
-            _button(Icons.stop, _audioHandler!.stop),
-            _button(Icons.skip_next, _audioHandler!.skipToNext),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildCurrentSong() {
     return StreamBuilder<MediaItem?>(
       stream: _audioHandler!.currentSong,
       builder: (context, snapshot) {
@@ -259,7 +185,87 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           return const SizedBox();
         }
         final song = snapshot.data!;
-        return Text(song.title, style: TextStyle( color:Colors.white,));
+        
+        return ListView.builder(
+          itemCount: songs.length,
+          itemExtent: 50.0, //强制高度为50.0
+          itemBuilder: (BuildContext context, int index) {
+            return _buildRow(songs[index], song.id == songs[index].id); 
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRow(MediaItem song, bool active) {
+    return Container(
+      decoration: const BoxDecoration(           // 裝飾內裝元件
+        // color: Colors.green, // 綠色背景
+        border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: InkWell (
+              onTap: () {
+                _audioHandler!.setSong(song);
+                _audioHandler!.play();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      margin: const EdgeInsets.only(right: 5),
+                      // decoration: BoxDecoration(
+                          // border: Border.all(width: 1.0, color: Colors.black),
+                      // ),
+                      child:! active ? null : const Icon(Icons.play_arrow, size: 20, color: Colors.white),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(song.title,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(
+                          color:Colors.white,
+                          fontSize: 16
+                        )
+                      ),
+                    )
+                  ]
+                )
+              ),
+            )
+          ),
+        ],
+      )
+    );
+  }
+  
+  Widget _buildControls() {
+    return StreamBuilder<bool>(
+      stream: _audioHandler!.playbackState.map((state) => state.playing).distinct(),
+      builder: (context, snapshot) {
+        final playing = snapshot.data ?? false;
+        final queueIndex = songs.indexOf(_audioHandler!.currentSong.value);
+        print("queueIndex: $queueIndex, ${songs.length}, rowIndex: $rowIndex");
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _button(Icons.skip_previous, _audioHandler!.skipToPrevious, visible: queueIndex > 0),
+            if (playing)
+              _button(Icons.pause, _audioHandler!.pause)
+            else
+              _button(Icons.play_arrow, _audioHandler!.play),
+            _button(Icons.stop, _audioHandler!.stop),
+            _button(Icons.skip_next, _audioHandler!.skipToNext, visible: queueIndex < songs.length -1),
+          ],
+        );
       },
     );
   }
@@ -321,6 +327,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final playing = _player.playing;
     
     final queueIndex = songs.indexOf(currentSong.value);
+  
     playbackState.add(playbackState.value.copyWith(
       controls: [
         MediaControl.skipToPrevious,
@@ -349,15 +356,3 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     ));
   }
 }
-
- // methodChannel.invokeMethod('finish');
-  /*
-  await methodChannel.invokeMethod('play', {
-      "title": download.title,
-      "author": download.author,
-      "position": ""
-    });
-    eventChannel.receiveBroadcastStream().listen((data) async {
-
-      });
-   */
