@@ -20,9 +20,9 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
-  Duration _duration = Duration(seconds: 1000);
-  Duration _position = Duration(seconds: 100);
+  Duration _position = Duration(seconds: 0);
   bool isReady = false;
+  
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -61,6 +61,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         setState(() {});
       }
     });
+    AudioService.position.listen((Duration position) { // 還沒測
+      _position = position;
+      print("position: $_position");
+    });
   }
 
   initial() async {
@@ -92,6 +96,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     _audioHandler!.init();
     isReady = true;
     setState(() { });
+
+
   }
 
   @override
@@ -286,6 +292,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         );
       },
     );
+  }
+
+  Future<void> sleepAndStop() async { // 還沒試
+    await Future.delayed(const Duration(minutes: 10));
+    _audioHandler?.stop();
   }
 }
 
