@@ -20,7 +20,6 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
-  Duration _position = Duration(seconds: 0);
   bool isReady = false;
   
 
@@ -56,14 +55,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         songs = [];
         initial();
         await Storage.setString("playDirectory", path);
+
       } else {
         isReady = true;
         setState(() {});
       }
-    });
-    AudioService.position.listen((Duration position) { // 還沒測
-      _position = position;
-      print("position: $_position");
     });
   }
 
@@ -151,6 +147,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               ),
               if(_audioHandler != null && songs.isNotEmpty)
                 _buildControls(),
+              // if(_audioHandler != null && songs.isNotEmpty)
+              //   _buildPosition()
             ]
           ),
         );
@@ -294,6 +292,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
+  Widget _buildPosition() { // 好了，但實用性有問題
+    return StreamBuilder<String>(
+      stream: _audioHandler!.currentPosition,
+      builder: (context, snapshot) {
+        final currentPosition = snapshot.data ?? "";
+
+        return Text(currentPosition,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle( color:Colors.white,));
+      },
+    );
+  }
+
   Future<void> sleepAndStop() async { // 還沒試
     await Future.delayed(const Duration(minutes: 10));
     _audioHandler?.stop();
@@ -303,9 +314,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _player = AudioPlayer();
   final currentSong = BehaviorSubject<MediaItem>();
+  final currentPosition = BehaviorSubject<String>();
 
   void init() async {
     _player.playbackEventStream.listen(_broadcastState);
+
+    // AudioService.position.listen((Duration position) {
+    //   var duration = "${position}".split(".")[0];
+    //   if(duration.startsWith("0:")) {
+    //     duration = duration.substring(2);
+    //   }
+    //   // currentPosition.add(duration); // 可以用了，但找不到清除的作法
+    //   // print("position: $duration");
+    // });
+
     if(queue.value.isNotEmpty) {
       stop();
       queue.value.clear();
@@ -356,7 +378,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final playing = _player.playing;
     
     final queueIndex = songs.indexOf(currentSong.value);
-  
     playbackState.add(playbackState.value.copyWith(
       controls: [
         MediaControl.skipToPrevious,
