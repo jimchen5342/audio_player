@@ -1,71 +1,47 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-Future<void> alert(BuildContext context, String msg, {List<Widget>? btns}) {
-  btns = btns ?? [
-    TextButton(
-      child: const Text('確定',
-          style: TextStyle(
-            color:Colors.blue,
-            fontSize: 16
-          )),
-      onPressed: () async {
-        Navigator.of(context).pop();
-      },
-    )
-  ];
-  return showDialog<void>(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-        title: const Text('音樂播放器'),
-        // barrierDismissible: false,
-        // contentPadding: EdgeInsets.all(20),
-        content: Text(msg,
-          style: const TextStyle(
-            // color:Colors.white,
-            fontSize: 18
-          )
-        ),
-        actions: btns,
-      );
-    },
-  );
-}
+import 'package:flutter_platform_alert/flutter_platform_alert.dart';
+export 'package:flutter_platform_alert/flutter_platform_alert.dart';
 
-void loading(BuildContext context, {Function(BuildContext)? onReady}){
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      if(onReady is Function) {
-        onReady!(context);
-      }
-      return Dialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Container(height: 15, width: 0),
-            CircularProgressIndicator(),
-            Container(height: 15, width: 0),
-            const Text("Loading......",
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 20,
-              )
-            ),
-            Container(height: 15, width: 0),
-          ],
-        ),
-      );
-    },
-  );
-}
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+export 'package:flutter_easyloading/flutter_easyloading.dart';
+
 
 Future<void> setTimeout(Function() callback, int ms) async {
   await Future.delayed(Duration(milliseconds: ms), callback); 
+}
+
+
+Future<String> alert(String text, {AlertButtonStyle btn = AlertButtonStyle.ok}) async {
+  await FlutterPlatformAlert.playAlertSound();
+
+  final clickedButton = await FlutterPlatformAlert.showAlert(
+    windowTitle: 'MyTube2',
+    text: text,
+    alertStyle: btn,
+    iconStyle: IconStyle.information,
+  );
+  // print("btn: ${clickedButton.toString()} / ${clickedButton.name}");
+  return clickedButton.name.replaceAll("Button", "");
+}
+
+Future<int> customAlert(String text, {required String positive, String? negative, String? neutral}) async { // 還沒好, 2024-05-10
+  await FlutterPlatformAlert.playAlertSound();
+
+  final result = await FlutterPlatformAlert.showCustomAlert(
+    windowTitle: 'MyTube2',
+    text: 'This is body',
+    positiveButtonTitle: positive, // result.index = 0
+    negativeButtonTitle: negative, // result.index = 1
+    neutralButtonTitle: null, // result.index = 2
+    options: PlatformAlertOptions(
+      windows: WindowsAlertOptions(
+        additionalWindowTitle: 'Window title',
+        showAsLinks: true,
+      ),
+    ),
+  );
+  print(result.index);
+  return result.index;
 }

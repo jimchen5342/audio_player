@@ -77,14 +77,13 @@ class _HomeState extends State<Home> {
   }
 
   refresh() async {
-    loading(context, onReady: (_) async {
-      Archive archive = Archive();
-      list = await archive.getDirectories(await Archive.root());
-      list.sort((a, b) => a["title"].compareTo(b["title"]));
-      await Storage.setJsonList("Directories", list); 
-      Navigator.pop(_);
-      setState(() {});
-    });
+    await EasyLoading.show(status: 'loading...');
+    Archive archive = Archive();
+    list = await archive.getDirectories(await Archive.root());
+    list.sort((a, b) => a["title"].compareTo(b["title"]));
+    await Storage.setJsonList("Directories", list); 
+    setState(() {});
+    await EasyLoading.dismiss();
   }
 
   @override

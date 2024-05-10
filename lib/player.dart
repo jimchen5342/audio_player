@@ -21,7 +21,6 @@ class Player extends StatefulWidget {
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
   bool isReady = false;
-  
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -44,7 +43,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 注册监听器
-
+    
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
@@ -53,17 +52,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       String active = await Storage.getString("playDirectory");
       if(songs.isEmpty || active != path) {
         songs = [];
-        initial();
+        await initial();
         await Storage.setString("playDirectory", path);
-
-      } else {
-        isReady = true;
-        setState(() {});
       }
+      isReady = true;
+      setState(() { });
     });
   }
 
-  initial() async {
+  Future<void> initial() async {
     String root = await Archive.root();
     Archive archive = Archive();
     List<String> list = await archive.getFiles(path);
@@ -90,10 +87,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       ),
     );
     _audioHandler!.init();
-    isReady = true;
-    setState(() { });
-
-
+    
+    return;
   }
 
   @override
@@ -131,16 +126,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     final Widget child;
     if(isReady) {
       child = StreamBuilder<MediaItem?>(
-      stream: _audioHandler!.currentSong,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox();
-        }
-        final song = snapshot.data!;
+        stream: _audioHandler!.currentSong,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const SizedBox();
+          }
+          final song = snapshot.data!;
 
-        return Container(
-          color: Colors.black87,
-          child: Column(children: [ 
+          return Container(
+            color: Colors.black87,
+            child: Column(children: [ 
               Expanded(
                 flex: 1,
                 child: body(song),
@@ -149,10 +144,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 _buildControls(),
               // if(_audioHandler != null && songs.isNotEmpty)
               //   _buildPosition()
-            ]
-          ),
-        );
-      });
+            ]),
+          );
+        }
+      );
     } else {
       child = const Center(
         child: CircularProgressIndicator(),
@@ -170,7 +165,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           ),
           title: Text(title,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle( color:Colors.white,)
+            style: const TextStyle( color:Colors.white,)
           ),
           // actions: [
           //   IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
@@ -293,12 +288,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget _buildPosition() { // 好了，但實用性有問題
-    return StreamBuilder<String>(
+    return StreamBuilder<Duration>(
       stream: _audioHandler!.currentPosition,
       builder: (context, snapshot) {
         final currentPosition = snapshot.data ?? "";
 
-        return Text(currentPosition,
+        return Text("$currentPosition",
             overflow: TextOverflow.ellipsis,
             style: TextStyle( color:Colors.white,));
       },
@@ -314,19 +309,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _player = AudioPlayer();
   final currentSong = BehaviorSubject<MediaItem>();
-  final currentPosition = BehaviorSubject<String>();
+  final currentPosition = BehaviorSubject<Duration>();
+  int _oldSeonds = 0;
 
   void init() async {
     _player.playbackEventStream.listen(_broadcastState);
+    currentPosition.add(Duration.zero);
 
-    // AudioService.position.listen((Duration position) {
-    //   var duration = "${position}".split(".")[0];
-    //   if(duration.startsWith("0:")) {
-    //     duration = duration.substring(2);
-    //   }
-    //   // currentPosition.add(duration); // 可以用了，但找不到清除的作法
-    //   // print("position: $duration");
-    // });
+    AudioService.position.listen((Duration position) {
+      if(position.inSeconds != _oldSeonds) {
+        currentPosition.add(position);
+        _oldSeonds = position.inSeconds;
+      }
+    });
+
 
     if(queue.value.isNotEmpty) {
       stop();
@@ -335,6 +331,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     
     queue.add(songs);
     _player.processingStateStream.listen((state) {
+      print("processingStateStream: $state");
+
       if (state == ProcessingState.completed) skipToNext();
     });
 
@@ -375,8 +373,9 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
+    print("PlaybackEvent: $event");
+
     final playing = _player.playing;
-    
     final queueIndex = songs.indexOf(currentSong.value);
     playbackState.add(playbackState.value.copyWith(
       controls: [
