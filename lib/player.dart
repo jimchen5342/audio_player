@@ -10,6 +10,7 @@ import 'package:rxdart/rxdart.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
+int spendSeconds = 0;
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class Player extends StatefulWidget {
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
   bool isReady = false;
+  int sleepTime = 0, defaultSleepTime = 0;
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -42,7 +44,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // 注册监听器
+    WidgetsBinding.instance.addObserver(this);
+    spendSeconds = 0;
     
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
@@ -50,6 +53,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       path = arg["path"] as String;
       setState(() {});
       String active = await Storage.getString("playDirectory");
+      defaultSleepTime = await Storage.getInt("sleepTime");
       if(songs.isEmpty || active != path) {
         songs = [];
         await initial();
@@ -142,8 +146,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               ),
               if(_audioHandler != null && songs.isNotEmpty)
                 _buildControls(),
-              // if(_audioHandler != null && songs.isNotEmpty)
-              //   _buildPosition()
+              if(_audioHandler != null && songs.isNotEmpty)
+                _buildSlider()
             ]),
           );
         }
@@ -153,6 +157,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         child: CircularProgressIndicator(),
       );
     }
+    
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -167,13 +172,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             overflow: TextOverflow.ellipsis,
             style: const TextStyle( color:Colors.white,)
           ),
-          // actions: [
-          //   IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
-          //     onPressed: () async {
-          //       setState(() {});
-          //     },
-          //   )
-          // ],
+          actions: [
+            _buildPopMenuSleep()
+          ],
           backgroundColor: Colors.deepOrangeAccent, 
         ),
         body: PopScope(
@@ -187,6 +188,56 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             child: child
         )
       )
+    );
+  }
+
+  Widget _PopupMenuButton() { // 還沒寫
+    return PopupMenuButton(
+      // color: Colors.yellow,
+      icon: const Icon(Icons.settings),
+      // child: Center(
+      //   child: Text("游戏"),
+      // ),
+      itemBuilder: (BuildContext context) {
+        return [
+          PopupMenuItem(child: Text("DOTA"), value: "dota",),
+          PopupMenuItem(child: Text("英雄联盟"),value: ["盖伦", "皇子", "提莫"],),
+          PopupMenuItem(child: Text("王者荣耀"),value: {"name":"王者荣耀"},),
+          
+        ];
+      },
+      onSelected: (Object object){
+        print(object);
+      },
+      onCanceled: (){
+        print("canceled");
+      },
+    );
+  }
+
+  Widget _buildPopMenuSleep() {
+    var arr = [1, 10, 20, 30, 45, 60];
+
+    return PopupMenuButton<int>(
+      icon: const Icon(Icons.alarm),
+      itemBuilder: (context) {
+        return [
+          for (var i = 0; i < arr.length; i++)
+            CheckedPopupMenuItem<int>(
+              value: arr[i],
+              checked: sleepTime == arr[i],
+              child: Text('${arr[i]} 分鐘', 
+                style: TextStyle(color: defaultSleepTime == arr[i] ? Colors.red : Colors.black)
+              )
+            ),
+        ];
+      },
+      onSelected: (int value) {
+        sleepTime = defaultSleepTime == value ? 0 : value;
+        defaultSleepTime = sleepTime;
+        spendSeconds = 0;
+        Storage.setInt("sleepTime", defaultSleepTime);
+      }
     );
   }
 
@@ -287,16 +338,48 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Widget _buildPosition() { // 好了，但實用性有問題
+  Widget _buildSlider() {
     return StreamBuilder<Duration>(
       stream: _audioHandler!.currentPosition,
       builder: (context, snapshot) {
-        final currentPosition = snapshot.data ?? "";
+        var currentPosition = (snapshot.data ?? const Duration(seconds: 0)).inSeconds.toDouble();
+        Duration? duration = _audioHandler!.currentSong.value.duration; 
+        final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
+        if(currentPosition > xx) currentPosition = 0;
 
-        return Text("$currentPosition",
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle( color:Colors.white,));
-      },
+        if(sleepTime != 0 && spendSeconds * 60 >= sleepTime) {
+          _audioHandler!.pause();
+          spendSeconds = 0;
+        }else {
+          spendSeconds++;
+        }
+
+        return Row(
+          children: [
+            Expanded(flex: 1, 
+              child:  Slider(
+                value: currentPosition,
+                max: xx,
+                // divisions: 5,
+                // label: currentPosition.format(),
+                onChanged: (double value) {
+                  setState(() {
+                    _audioHandler!.seek(Duration(seconds: value.toInt()));
+                  });
+                },
+              )
+            ),
+            if(currentPosition > 0)
+              Text((snapshot.data ?? const Duration(seconds: 0)).format(), 
+                style: const TextStyle(
+                  // color: Colors.white,
+                  fontSize: 20,
+                )
+              )
+          ]
+        )
+        ;
+      }
     );
   }
 
@@ -310,32 +393,27 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final _player = AudioPlayer();
   final currentSong = BehaviorSubject<MediaItem>();
   final currentPosition = BehaviorSubject<Duration>();
-  int _oldSeonds = 0;
+  int _oldSeconds = 0;
 
   void init() async {
     _player.playbackEventStream.listen(_broadcastState);
     currentPosition.add(Duration.zero);
 
     AudioService.position.listen((Duration position) {
-      if(position.inSeconds != _oldSeonds) {
+      if(position.inSeconds != _oldSeconds) {
         currentPosition.add(position);
-        _oldSeonds = position.inSeconds;
+        _oldSeconds = position.inSeconds;
       }
     });
-
 
     if(queue.value.isNotEmpty) {
       stop();
       queue.value.clear();
     }
-    
     queue.add(songs);
     _player.processingStateStream.listen((state) {
-      print("processingStateStream: $state");
-
       if (state == ProcessingState.completed) skipToNext();
     });
-
     setSong(songs.first);
   }
 
@@ -373,10 +451,13 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   /// Broadcasts the current state to all clients.
   void _broadcastState(PlaybackEvent event) {
-    print("PlaybackEvent: $event");
-
     final playing = _player.playing;
     final queueIndex = songs.indexOf(currentSong.value);
+
+    // event.currentIndex
+    if(event.processingState == ProcessingState.completed && queueIndex == songs.length -1) {
+      spendSeconds = 0;
+    }
     playbackState.add(playbackState.value.copyWith(
       controls: [
         MediaControl.skipToPrevious,
