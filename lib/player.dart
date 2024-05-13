@@ -10,7 +10,7 @@ import 'package:rxdart/rxdart.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
-int spendSeconds = 0;
+int spendSeconds = 0, sleepTime = 0;
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -21,8 +21,8 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
-  bool isReady = false;
-  int sleepTime = 0, defaultSleepTime = 0;
+  bool isReady = false, repeat = false;
+  int defaultSleepTime = 0;
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -46,14 +46,18 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     spendSeconds = 0;
+    sleepTime = 0;
     
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String;
       path = arg["path"] as String;
       setState(() {});
+
       String active = await Storage.getString("playDirectory");
       defaultSleepTime = await Storage.getInt("sleepTime");
+      repeat = await Storage.getBool("repeat");
+
       if(songs.isEmpty || active != path) {
         songs = [];
         await initial();
@@ -173,7 +177,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             style: const TextStyle( color:Colors.white,)
           ),
           actions: [
-            _buildPopMenuSleep()
+            _buildPopMenuSleep(),
+            IconButton(
+              icon: Icon(repeat == true ? Icons.repeat_one_on : Icons.repeat,
+                color: repeat == true ? Colors.red : Colors.white,
+              ),
+              onPressed: () async {
+                repeat = !repeat;
+                _audioHandler!.setRepeatMode( repeat 
+                  ? AudioServiceRepeatMode.one 
+                  : AudioServiceRepeatMode.none
+                ); // none/one/all/group
+                await Storage.setBool("repeat", repeat);
+              },
+            )
           ],
           backgroundColor: Colors.deepOrangeAccent, 
         ),
@@ -191,35 +208,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Widget _buildPopupMenuButton() { // 還沒寫
-    return PopupMenuButton(
-      // color: Colors.yellow,
-      icon: const Icon(Icons.settings),
-      // child: Center(
-      //   child: Text("游戏"),
-      // ),
-      itemBuilder: (BuildContext context) {
-        return [
-          PopupMenuItem(child: Text("DOTA"), value: "dota",),
-          PopupMenuItem(child: Text("英雄联盟"),value: ["盖伦", "皇子", "提莫"],),
-          PopupMenuItem(child: Text("王者荣耀"),value: {"name":"王者荣耀"},),
-          
-        ];
-      },
-      onSelected: (Object object){
-        print(object);
-      },
-      onCanceled: (){
-        print("canceled");
-      },
-    );
-  }
-
   Widget _buildPopMenuSleep() {
     var arr = [5, 10, 15, 20, 25, 30, 45, 60];
 
     return PopupMenuButton<int>(
-      icon: const Icon(Icons.alarm),
+      icon: const Icon(Icons.alarm, color: Colors.white,),
       itemBuilder: (context) {
         return [
           for (var i = 0; i < arr.length; i++)
@@ -349,16 +342,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
         if(currentPosition > xx) currentPosition = 0;
 
-        if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
-          _audioHandler!.pause();
-          spendSeconds = 0;
-        }else {
-          spendSeconds++;
-        }
+        var str = (xx - currentPosition) == 0 ? "" 
+          : "-${Duration(seconds: (xx - currentPosition).toInt()).format()}";
 
-        var str = (xx - currentPosition) == 0 ? "" : "-" + Duration(seconds: (xx - currentPosition).toInt()).format();
-
-        return Row(
+        return  Row(
           children: [
             Expanded(flex: 1, 
               child:  Slider(
@@ -379,10 +366,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                   color: Colors.white,
                   fontSize: 20,
                 )
-              )
+              ),
+            const SizedBox(width: 10),
+            // Text(spendSeconds.toString(),
+            //   style: const TextStyle(
+            //     color: Colors.red,
+            //     fontSize: 20,
+            //   )
+            // ),
           ]
-        )
-        ;
+        );
       }
     );
   }
@@ -407,6 +400,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       if(position.inSeconds != _oldSeconds) {
         currentPosition.add(position);
         _oldSeconds = position.inSeconds;
+
+        if(sleepTime != 0) {
+          if(spendSeconds >= sleepTime * 60) {
+            pause();
+            spendSeconds = 0;
+          } else if(position.inSeconds > 0) {
+            spendSeconds++;
+          }
+        } 
       }
     });
 
@@ -458,7 +460,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final playing = _player.playing;
     final queueIndex = songs.indexOf(currentSong.value);
 
-    // event.currentIndex
+    // print("state: ${event.processingState}, index: $queueIndex / ${songs.length -1}");
     if(event.processingState == ProcessingState.completed && queueIndex == songs.length -1) {
       spendSeconds = 0;
     }
