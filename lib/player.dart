@@ -145,9 +145,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 child: body(song),
               ),
               if(_audioHandler != null && songs.isNotEmpty)
-                _buildControls(),
+                _buildSlider(),
               if(_audioHandler != null && songs.isNotEmpty)
-                _buildSlider()
+                _buildControls(),
             ]),
           );
         }
@@ -191,7 +191,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Widget _PopupMenuButton() { // 還沒寫
+  Widget _buildPopupMenuButton() { // 還沒寫
     return PopupMenuButton(
       // color: Colors.yellow,
       icon: const Icon(Icons.settings),
@@ -216,7 +216,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget _buildPopMenuSleep() {
-    var arr = [1, 10, 20, 30, 45, 60];
+    var arr = [5, 10, 15, 20, 25, 30, 45, 60];
 
     return PopupMenuButton<int>(
       icon: const Icon(Icons.alarm),
@@ -233,10 +233,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         ];
       },
       onSelected: (int value) {
-        sleepTime = defaultSleepTime == value ? 0 : value;
-        defaultSleepTime = sleepTime;
+        sleepTime = sleepTime == value ? 0 : value;
+        defaultSleepTime = -1;
         spendSeconds = 0;
-        Storage.setInt("sleepTime", defaultSleepTime);
+        if(sleepTime != 0) {
+          Storage.setInt("sleepTime", sleepTime);
+        }
       }
     );
   }
@@ -347,12 +349,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
         if(currentPosition > xx) currentPosition = 0;
 
-        if(sleepTime != 0 && spendSeconds * 60 >= sleepTime) {
+        if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
           _audioHandler!.pause();
           spendSeconds = 0;
         }else {
           spendSeconds++;
         }
+
+        var str = (xx - currentPosition) == 0 ? "" : "-" + Duration(seconds: (xx - currentPosition).toInt()).format();
 
         return Row(
           children: [
@@ -370,9 +374,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               )
             ),
             if(currentPosition > 0)
-              Text((snapshot.data ?? const Duration(seconds: 0)).format(), 
+              Text(str,
                 style: const TextStyle(
-                  // color: Colors.white,
+                  color: Colors.white,
                   fontSize: 20,
                 )
               )
