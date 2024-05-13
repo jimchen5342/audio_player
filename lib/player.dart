@@ -56,7 +56,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
       String active = await Storage.getString("playDirectory");
       defaultSleepTime = await Storage.getInt("sleepTime");
-      repeat = await Storage.getBool("repeat");
+      // repeat = await Storage.getBool("repeat");
 
       if(songs.isEmpty || active != path) {
         songs = [];
@@ -85,7 +85,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       );
       songs.add(item);
     }
-    
     _audioHandler ??= await AudioService.init(
       builder: () => AudioPlayerHandler(),
       config: const AudioServiceConfig(
@@ -94,6 +93,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         androidNotificationOngoing: true,
       ),
     );
+    
     _audioHandler!.init();
     
     return;
@@ -178,19 +178,22 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           ),
           actions: [
             _buildPopMenuSleep(),
-            IconButton(
-              icon: Icon(repeat == true ? Icons.repeat_one_on : Icons.repeat,
-                color: repeat == true ? Colors.red : Colors.white,
-              ),
-              onPressed: () async {
-                repeat = !repeat;
-                _audioHandler!.setRepeatMode( repeat 
-                  ? AudioServiceRepeatMode.one 
-                  : AudioServiceRepeatMode.none
-                ); // none/one/all/group
-                await Storage.setBool("repeat", repeat);
-              },
-            )
+            // if(_audioHandler != null && songs.isNotEmpty) // 沒有效 2024-05-13
+            //   IconButton(
+            //     icon: Icon(repeat == true ? Icons.repeat_one : Icons.repeat,
+            //       color: repeat == true ? Colors.white : Colors.white,
+            //     ),
+            //     onPressed: () async {
+            //       repeat = !repeat;
+            //       _audioHandler!.setRepeatMode( repeat 
+            //         ? AudioServiceRepeatMode.one 
+            //         : AudioServiceRepeatMode.none
+            //       ); // none/one/all/group
+            //       await Storage.setBool("repeat", repeat);
+            //       setState(() {
+            //       });
+            //     },
+            //   ),
           ],
           backgroundColor: Colors.deepOrangeAccent, 
         ),
