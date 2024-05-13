@@ -215,15 +215,21 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     var arr = [5, 10, 15, 20, 25, 30, 45, 60];
 
     return PopupMenuButton<int>(
-      icon: const Icon(Icons.alarm, color: Colors.white,),
+      icon: const Icon(Icons.alarm, color: Colors.white),
+      offset: const Offset(0, 40),
       itemBuilder: (context) {
+        int sub = (sleepTime * 60) - spendSeconds;
+        String total = sub == 0 ? ""  : " (${Duration(seconds: sub).format()})";
         return [
           for (var i = 0; i < arr.length; i++)
             CheckedPopupMenuItem<int>(
               value: arr[i],
               checked: sleepTime == arr[i],
-              child: Text('${arr[i]} 分鐘', 
-                style: TextStyle(color: defaultSleepTime == arr[i] ? Colors.red : Colors.black)
+              child: Text('${arr[i]} 分鐘${sleepTime == arr[i] ? total : ""}', 
+                style: TextStyle(
+                  fontSize: 18,
+                  color: defaultSleepTime == arr[i] ? Colors.red : Colors.black
+                )
               )
             ),
         ];
