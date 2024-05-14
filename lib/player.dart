@@ -104,8 +104,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
     
     _audioHandler!.init();
-
-    LoopMode mode = LoopMode.off;
     if(loop == 1) {
       _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
     }
