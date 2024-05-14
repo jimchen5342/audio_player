@@ -33,7 +33,7 @@ class Archive {
           if(list2.isNotEmpty) {
             list = list + list2;
           }
-        } else if(f1 is File && isMP3(f1)) {
+        } else if(f1 is File && isMusic(f1)) {
           count++;          
         }
       }
@@ -53,32 +53,23 @@ class Archive {
     List<String> list = [];
     var dirList1 = Directory("$root/$directoryPath").list();
     await for (final FileSystemEntity f1 in dirList1) {
-      if(f1 is File && isMP3(f1)) {
+      if(f1 is File && isMusic(f1)) {
         var paths = f1.path.split('/');
         String title = paths[paths.length - 1];
         list.add(title);
       }
     }
-    return list..sort();
+    if(directoryPath == "MyTube2") {
+      return list..sort((b, a) => a.compareTo(b));
+    } else {
+      return list..sort();
+    }
   }
 
-
-  writeFile() async { // 測好了，可以用
-    var path = await ExternalPath.getExternalStorageDirectories();
-    var file = File('${path[0]}/counter.txt');
-
-    file.writeAsString('jim'); 
-    /* 測好了，可以用
-    var path = await ExternalPath.getExternalStorageDirectories();
-    print("path: ${path[0]}");
-    var path2 = await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_MUSIC);
-    print("DIRECTORY_MUSIC: ${path2}");
-    */
-  }
-
-
-  bool isMP3(File file) {
+  bool isMusic(File file) {
     return file.path.toLowerCase().endsWith('.mp3') 
-      || file.path.toLowerCase().endsWith('.mp4');
+      || file.path.toLowerCase().endsWith('.mp4')
+      || file.path.toLowerCase().endsWith('.3gpp')
+      || file.path.toLowerCase().endsWith('.webm');
   }
 }

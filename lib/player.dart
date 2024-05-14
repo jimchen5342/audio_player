@@ -21,8 +21,9 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
-  bool isReady = false, repeat = false;
+  bool isReady = false;
   int defaultSleepTime = 0;
+  int loop = 0; 
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -56,7 +57,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
       String active = await Storage.getString("playDirectory");
       defaultSleepTime = await Storage.getInt("sleepTime");
-      // repeat = await Storage.getBool("repeat");
+      loop = await Storage.getInt("loop");
 
       if(songs.isEmpty || active != path) {
         songs = [];
@@ -68,6 +69,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     });
   }
 
+  String trim(String title) {
+    List list = ['3gpp', 'webm', 'mp4', 'mp3'];
+    for(var i = 0; i < list.length; i++) {
+      title = title.replaceAll(".${list[i]}", "");
+    }
+    return title;
+  }
+
   Future<void> initial() async {
     String root = await Archive.root();
     Archive archive = Archive();
@@ -76,10 +85,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     for(var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
       var duration = await player.setUrl(fullName);
-    
+
       var item = MediaItem(
         id: fullName,
-        title: list[i].replaceAll(".mp3", "").replaceAll(".mp4", ""),
+        title: trim(list[i]),
         album: title,
         duration: duration,
       );
@@ -95,7 +104,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
     
     _audioHandler!.init();
-    
+
+    LoopMode mode = LoopMode.off;
+    if(loop == 1) {
+      _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
+    }
     return;
   }
 
@@ -161,6 +174,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         child: CircularProgressIndicator(),
       );
     }
+
+    Widget iconLoop = Icon(Icons.repeat, color: Colors.white);
+    if(loop == 1) {
+      iconLoop = Icon(Icons.repeat_one, color: Colors.white);
+    } else if(loop == 10) {
+      iconLoop = Icon(Icons.repeat, color: Colors.white);
+    }
     
     return SafeArea(
       child: Scaffold(
@@ -177,23 +197,27 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             style: const TextStyle( color:Colors.white,)
           ),
           actions: [
-            _buildPopMenuSleep(),
-            // if(_audioHandler != null && songs.isNotEmpty) // 沒有效 2024-05-13
-            //   IconButton(
-            //     icon: Icon(repeat == true ? Icons.repeat_one : Icons.repeat,
-            //       color: repeat == true ? Colors.white : Colors.white,
-            //     ),
-            //     onPressed: () async {
-            //       repeat = !repeat;
-            //       _audioHandler!.setRepeatMode( repeat 
-            //         ? AudioServiceRepeatMode.one 
-            //         : AudioServiceRepeatMode.none
-            //       ); // none/one/all/group
-            //       await Storage.setBool("repeat", repeat);
-            //       setState(() {
-            //       });
-            //     },
-            //   ),
+            if(_audioHandler != null && songs.isNotEmpty)
+              _buildPopMenuSleep(),
+            if(_audioHandler != null && songs.isNotEmpty)
+              IconButton(
+                icon: iconLoop,
+                onPressed: () async {
+                  LoopMode mode = LoopMode.off;
+                  if(loop == 0) {
+                    loop = 1;
+                    mode = LoopMode.one;
+                  // } else if(loop == 1) {
+                  //   loop = 10;
+                  //   mode = LoopMode.all;
+                  } else {
+                    loop = 0;
+                  }
+                  _audioHandler!.setLoopMode(mode); // 0 off/1 one/10 all
+                  await Storage.setInt("loop", loop);
+                  setState(() { });
+                },
+              ),
           ],
           backgroundColor: Colors.deepOrangeAccent, 
         ),
@@ -430,6 +454,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       if (state == ProcessingState.completed) skipToNext();
     });
     setSong(songs.first);
+    
+  }
+
+  Future<void> setLoopMode(LoopMode mode) async {
+    await _player.setLoopMode(mode);
   }
 
   Future<void> setSong(MediaItem song) async {
