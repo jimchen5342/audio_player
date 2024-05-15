@@ -113,7 +113,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         id: fullName,
         title: songName,
         album: title,  // 目錄名稱
-        artist: author, // 還沒寫
+        artist: author,
         duration: duration,
       );
       songs.add(item);
