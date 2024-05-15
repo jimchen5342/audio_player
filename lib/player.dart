@@ -22,8 +22,10 @@ class Player extends StatefulWidget {
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
   bool isReady = false;
-  int defaultSleepTime = 0;
-  int loop = 0; 
+  int defaultSleepTime = 0, loop = 0;
+  final double _height = 50;
+  final ScrollController _controller = ScrollController();
+
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -128,6 +130,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   dispose() async {
     super.dispose();
+    _controller.dispose();
     WidgetsBinding.instance.removeObserver(this); // 移除监听器
   }
 
@@ -177,11 +180,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       );
     }
 
-    Widget iconLoop = Icon(Icons.repeat, color: Colors.white);
+    Widget iconLoop = const Icon(Icons.repeat, color: Colors.white);
     if(loop == 1) {
-      iconLoop = Icon(Icons.repeat_one, color: Colors.white);
+      iconLoop = const Icon(Icons.repeat_one, color: Colors.white);
     } else if(loop == 10) {
-      iconLoop = Icon(Icons.repeat, color: Colors.white);
+      iconLoop = const Icon(Icons.repeat, color: Colors.white);
     }
     
     return SafeArea(
@@ -273,8 +276,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Widget body(MediaItem song) {
     return ListView.builder(
+      controller: _controller,
       itemCount: songs.length,
-      itemExtent: 50.0, //强制高度为50.0
+      itemExtent: _height,
       itemBuilder: (BuildContext context, int index) {
         return _buildRow(songs[index], song.id == songs[index].id); 
       },
@@ -415,9 +419,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Future<void> sleepAndStop() async { // 還沒試
-    await Future.delayed(const Duration(minutes: 10));
-    _audioHandler?.stop();
+  void _animateToIndex(int index) { // 還沒寫
+    // _controller.position
+    _controller.animateTo(
+      (index - 2) * _height,
+      duration: const Duration(seconds: 2),
+      curve: Curves.fastOutSlowIn,
+    );
   }
 }
 

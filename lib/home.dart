@@ -45,6 +45,10 @@ class _HomeState extends State<Home> {
         });
       }
     });
+
+    _controller.addListener(() { // 測試
+      print("offset: ${_controller.offset} / position: ${_controller.position}");
+    });
   }
 
   invokePermission() async {
@@ -94,6 +98,7 @@ class _HomeState extends State<Home> {
   @override
   dispose() {
     super.dispose();
+    _controller.dispose();
   }
   
   backTo(){
@@ -249,9 +254,10 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _animateToIndex(int index) {
+  void _animateToIndex(int index) { // 還沒寫
+    
     _controller.animateTo(
-      index * _height,
+      (index - 2) * _height,
       duration: const Duration(seconds: 2),
       curve: Curves.fastOutSlowIn,
     );
