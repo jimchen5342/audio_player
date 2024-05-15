@@ -68,10 +68,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       isReady = true;
       setState(() { });
     });
-    _controller.addListener(() { // 測試
-    // final visibleRange = scrollPosition.viewportDimension;
-      print("offset: ${_controller.offset} / position: ${_controller.position.viewportDimension}");
-    });
+   
   }
 
   String trim(String title) {
@@ -281,6 +278,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Widget body(MediaItem song) {
     print("title: " + song.title);
 
+    final queueIndex = songs.indexOf(song);
+    _animateToIndex(queueIndex);
+
     return ListView.builder(
       controller: _controller,
       itemCount: songs.length,
@@ -425,21 +425,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  void _animateToIndex(int index) { // 還沒寫
-    final ScrollPosition scrollPosition = _controller.position;
-    final visibleRange = scrollPosition.viewportDimension;
-    // final visibleRange = scrollPosition.ensureVisible(object);
-  // double height = MediaQuery.of(context).size.height;
-    // _controller.position
-    double _h = index * _height;
-    if((_h > _controller.offset) && (_h + _height < _controller.offset)) {
-      // _controller.animateTo(
-      //   (index - 2) * _height,
-      //   duration: const Duration(seconds: 2),
-      //   curve: Curves.fastOutSlowIn,
-      // );
+  void _animateToIndex(int index) {
+    if(_controller == null || _controller.positions.isEmpty) return;
+    
+    final visibleRange = _controller.position.viewportDimension;
+    double pos = -1, newPos = index * _height;
+    if(newPos < _controller.offset) {
+      pos = index * _height;
+    } else if(newPos > _controller.offset + visibleRange) {
+      pos = index * _height;
     }
 
+    if(pos > -1) {
+      _controller.animateTo(pos,
+        duration: const Duration(seconds: 2),
+        curve: Curves.fastOutSlowIn,
+      );      
+    }
   }
 }
 
