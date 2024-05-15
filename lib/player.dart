@@ -98,11 +98,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       String songName = trim(list[i]);
       String author = "";
       if(title == "MyTube2") {
-        var obj = playlist.firstWhere((e) => e["audioName"] == fullName);
-        if(obj != null) {
-          songName = obj["title"];
-          author = obj["author"];
+        for(var x = 0; x < playlist.length; x++) {
+          var e = playlist[x];
+          if(e["audioName"] == fullName) {
+            songName = e["title"];
+            author = e["author"];
+            break;
+          }
         }
+        // var obj = playlist.firstWhere((e) => e["audioName"] == fullName);
+        // if(obj != null) {
+        //   songName = obj["title"];
+        //   author = obj["author"];
+        // }
       } else if(songName.contains("-")) {
         List<String> arr = songName.split("-");
         songName = arr[0].trim();
@@ -321,21 +329,38 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       width: 20,
       margin: const EdgeInsets.only(right: 5),
       // decoration: BoxDecoration(
-          // border: Border.all(width: 1.0, color: Colors.black),
+      //     border: Border.all(width: 1.0, color: Colors.white),
       // ),
       child: active 
         ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
-        : Text((index + 1).toString(), style: const TextStyle(color:Colors.white, fontSize: 12)) 
+        : Text((index + 1).toString(), 
+            textAlign: TextAlign.right,
+            style: const TextStyle(color:Colors.grey, fontSize: 12)
+          ) 
     );
-    Widget widget2 = Text(song.title,
-      softWrap: true,
-      overflow: TextOverflow.ellipsis,
-      textDirection: TextDirection.ltr,
-      style: const TextStyle(color:Colors.white, fontSize: 18)
+    Widget widget2 = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(song.title,
+          softWrap: true,
+          overflow: TextOverflow.ellipsis,
+          textDirection: TextDirection.ltr,
+          style: const TextStyle(color:Colors.white, fontSize: 18)
+        ),
+        if(song.artist != null && song.artist!.isNotEmpty)
+          Text(song.artist!,
+            softWrap: true,
+            overflow: TextOverflow.ellipsis,
+            textDirection: TextDirection.ltr,
+            style: const TextStyle(color:Colors.white, fontSize: 12)
+          ),
+      ]
     );
 
     return Container(
-      decoration: const BoxDecoration(           // 裝飾內裝元件
+      decoration: const BoxDecoration(
+        // color: Colors.green,
         border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
       child: Row(
@@ -343,6 +368,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           Expanded(
             flex: 1,
             child: Material(
+              color: Colors.transparent,
               child: InkWell(
                 onTap: () {
                   _audioHandler!.setSong(song);
@@ -370,7 +396,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 ),
               )
             )
-          ),
+          )
         ],
       )
     );

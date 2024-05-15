@@ -185,6 +185,7 @@ class _HomeState extends State<Home> {
               Expanded(
                 flex: 1,
                 child: Material(
+                  color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
                     onTap: () async {
                       Navigator.pushNamed(context, '/player', arguments: list[index]);
