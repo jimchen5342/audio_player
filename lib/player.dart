@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:audio_player/system/module.dart';
 
@@ -52,7 +53,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
-      title = arg["title"] as String;
+      title = arg["title"] as String; // 目錄名稱
       path = arg["path"] as String;
       setState(() {});
 
@@ -84,14 +85,35 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     Archive archive = Archive();
     List<String> list = await archive.getFiles(path);
     final player = AudioPlayer();
+
+    List playlist = [];
+    if(title == "MyTube2") {
+      PlayList pl = PlayList();
+      playlist = await pl.read(root);
+    }
+
     for(var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
       var duration = await player.setUrl(fullName);
+      String songName = trim(list[i]);
+      String author = "";
+      if(title == "MyTube2") {
+        var obj = playlist.firstWhere((e) => e["audioName"] == fullName);
+        if(obj != null) {
+          songName = obj["title"];
+          author = obj["author"];
+        }
+      } else if(songName.contains("-")) {
+        List<String> arr = songName.split("-");
+        songName = arr[0].trim();
+        author = arr[1].trim();
+      }
 
       var item = MediaItem(
         id: fullName,
-        title: trim(list[i]),
-        album: title,
+        title: songName,
+        album: title,  // 目錄名稱
+        artist: author, // 還沒寫
         duration: duration,
       );
       songs.add(item);
@@ -165,7 +187,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             child: Column(children: [ 
               Expanded(
                 flex: 1,
-                child: body(song),
+                child: _buildListview(song),
               ),
               if(_audioHandler != null && songs.isNotEmpty)
                 _buildSlider(),
@@ -275,7 +297,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  Widget body(MediaItem song) {
+  Widget _buildListview(MediaItem song) {
     final queueIndex = songs.indexOf(song);
     _animateToIndex(queueIndex);
 
@@ -284,68 +306,69 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       itemCount: songs.length,
       itemExtent: _height,
       itemBuilder: (BuildContext context, int index) {
-        return _buildRow(songs[index], song.id == songs[index].id); 
+        return _buildRow(index, song.id == songs[index].id); 
       },
     );
   }
 
-  Widget _buildRow(MediaItem song, bool active) {
+  Widget _buildRow(int index, bool active) {
+    MediaItem song = songs[index];
     var duration = "${song.duration}".split(".")[0];
     if(duration.startsWith("0:")) {
       duration = duration.substring(2);
     }
+    Widget widget1 = Container(
+      width: 20,
+      margin: const EdgeInsets.only(right: 5),
+      // decoration: BoxDecoration(
+          // border: Border.all(width: 1.0, color: Colors.black),
+      // ),
+      child: active 
+        ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
+        : Text((index + 1).toString(), style: const TextStyle(color:Colors.white, fontSize: 12)) 
+    );
+    Widget widget2 = Text(song.title,
+      softWrap: true,
+      overflow: TextOverflow.ellipsis,
+      textDirection: TextDirection.ltr,
+      style: const TextStyle(color:Colors.white, fontSize: 18)
+    );
+
     return Container(
       decoration: const BoxDecoration(           // 裝飾內裝元件
-        // color: Colors.green, // 綠色背景
         border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
       child: Row(
         children: [
           Expanded(
             flex: 1,
-            child: InkWell (
-              onTap: () {
-                _audioHandler!.setSong(song);
-                _audioHandler!.play();
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 20,
-                      margin: const EdgeInsets.only(right: 5),
-                      // decoration: BoxDecoration(
-                          // border: Border.all(width: 1.0, color: Colors.black),
-                      // ),
-                      child:! active ? null : const Icon(Icons.play_arrow, size: 20, color: Colors.white),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text(song.title,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.ltr,
-                        style: const TextStyle(
-                          color:Colors.white,
-                          fontSize: 18
-                        )
-                      ),
-                    ),
-                    Padding(padding: const EdgeInsets.only(left: 8.0),
-                      child: Text(duration,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.ltr,
-                        style: const TextStyle(
-                          color:Colors.white,
-                          fontSize: 14
+            child: Material(
+              child: InkWell(
+                onTap: () {
+                  _audioHandler!.setSong(song);
+                  _audioHandler!.play();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      widget1,
+                      Expanded( flex: 1, child: widget2),
+                      Padding(padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(duration,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(
+                            color:Colors.white,
+                            fontSize: 14
+                          )
                         )
                       )
-                    )
-                  ]
-                )
-              ),
+                    ]
+                  )
+                ),
+              )
             )
           ),
         ],
@@ -553,5 +576,23 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       speed: _player.speed,
       queueIndex: queueIndex,
     ));
+  }
+}
+
+class PlayList {
+
+  // PlayList() { }
+
+  Future<List> read(String root) async { 
+    String s = "";
+    File file = File("$root/MyTube2/playlist.txt");
+    if(file.existsSync()) {
+      s = file.readAsStringSync();
+    }
+    List datas = [];
+    if(s.isNotEmpty) {
+      datas = jsonDecode(s);
+    }
+    return datas;
   }
 }

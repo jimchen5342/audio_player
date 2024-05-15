@@ -184,38 +184,40 @@ class _HomeState extends State<Home> {
             children: [
               Expanded(
                 flex: 1,
-                child: InkWell (
-                onTap: () async {
-                    Navigator.pushNamed(context, '/player', arguments: list[index]);
-                    active = list[index]["path"];
-                    setState(() {});
-                    await Storage.setString("activeDirectory", active);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.only(left: 5),
-                    // padding: const EdgeInsets.all(5),
-                    // padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("${list[index]["title"]}",
-                          style: const TextStyle(
-                            color: Colors.white, // active == list[index]["path"] ? Colors.white : null,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18
-                          )
-                        ),
-                        if(list[index]["count"] != null)
-                          Text(list[index]["title"] == "MyTube2" ? "" : "   ${list[index]["count"]}首",
+                child: Material(
+                  child: InkWell (
+                    onTap: () async {
+                      Navigator.pushNamed(context, '/player', arguments: list[index]);
+                      active = list[index]["path"];
+                      setState(() {});
+                      await Storage.setString("activeDirectory", active);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(left: 5),
+                      // padding: const EdgeInsets.all(5),
+                      // padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("${list[index]["title"]}",
                             style: const TextStyle(
-                              color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
-                              fontSize: 14
+                              color: Colors.white, // active == list[index]["path"] ? Colors.white : null,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18
                             )
-                          )
-                      ]
-                    )
-                  ),
+                          ),
+                          if(list[index]["count"] != null)
+                            Text(list[index]["title"] == "MyTube2" ? "" : "   ${list[index]["count"]}首",
+                              style: const TextStyle(
+                                color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
+                                fontSize: 14
+                              )
+                            )
+                        ]
+                      )
+                    ),
+                  )
                 )
               ),
               if(blackList.isEmpty)
