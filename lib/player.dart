@@ -276,8 +276,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget body(MediaItem song) {
-    print("title: " + song.title);
-
     final queueIndex = songs.indexOf(song);
     _animateToIndex(queueIndex);
 
