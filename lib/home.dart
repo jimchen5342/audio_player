@@ -46,9 +46,7 @@ class _HomeState extends State<Home> {
       }
     });
 
-    _controller.addListener(() { // 測試
-      print("offset: ${_controller.offset} / position: ${_controller.position}");
-    });
+
   }
 
   invokePermission() async {

@@ -23,9 +23,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "";
   bool isReady = false;
   int defaultSleepTime = 0, loop = 0;
-  final double _height = 50;
+  final double _height = 70;
   final ScrollController _controller = ScrollController();
-
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
@@ -69,6 +68,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       isReady = true;
       setState(() { });
     });
+    _controller.addListener(() { // 測試
+    // final visibleRange = scrollPosition.viewportDimension;
+      print("offset: ${_controller.offset} / position: ${_controller.position.viewportDimension}");
+    });
   }
 
   String trim(String title) {
@@ -110,7 +113,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       _audioHandler!.init();
       if(loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
-      }      
+      }
     }
 
     return;
@@ -125,6 +128,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   void reassemble() async { // develope mode
     super.reassemble();
     // initial();
+    _animateToIndex(0);
   }
 
   @override
@@ -275,6 +279,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget body(MediaItem song) {
+    print("title: " + song.title);
+
     return ListView.builder(
       controller: _controller,
       itemCount: songs.length,
@@ -420,12 +426,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   void _animateToIndex(int index) { // 還沒寫
+    final ScrollPosition scrollPosition = _controller.position;
+    final visibleRange = scrollPosition.viewportDimension;
+    // final visibleRange = scrollPosition.ensureVisible(object);
+  // double height = MediaQuery.of(context).size.height;
     // _controller.position
-    _controller.animateTo(
-      (index - 2) * _height,
-      duration: const Duration(seconds: 2),
-      curve: Curves.fastOutSlowIn,
-    );
+    double _h = index * _height;
+    if((_h > _controller.offset) && (_h + _height < _controller.offset)) {
+      // _controller.animateTo(
+      //   (index - 2) * _height,
+      //   duration: const Duration(seconds: 2),
+      //   curve: Curves.fastOutSlowIn,
+      // );
+    }
+
   }
 }
 
