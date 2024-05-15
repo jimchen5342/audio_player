@@ -24,20 +24,25 @@ class _HomeState extends State<Home> {
       await invokePermission();
       active = await Storage.getString("activeDirectory");
       list = await Storage.getJsonList("Directories");
+      int activeIndex = -1;
       if(list.isEmpty) {
         await refresh();        
       } else {
         if(list.length > 10) {
           for(var i = 0; i < list.length; i++) {
             if(active == list[i]["path"]){
-              setTimeout(() => {
-                _animateToIndex(i)
-              }, 600);
+              activeIndex = i;
               break;
             }
           }
         }
-        setState(() {});
+        setState(() {
+          if(activeIndex > -1) {
+            setTimeout(() => {
+              _animateToIndex(activeIndex)
+            }, 600);
+          }
+        });
       }
     });
   }
@@ -162,6 +167,7 @@ class _HomeState extends State<Home> {
 
   Widget body() {
     return ListView.builder(
+      controller: _controller,
       itemCount: list.length,
       itemExtent: _height, //强制高度
       itemBuilder: (BuildContext context, int index) {
@@ -198,7 +204,7 @@ class _HomeState extends State<Home> {
                           )
                         ),
                         if(list[index]["count"] != null)
-                          Text("   ${list[index]["count"]}首",
+                          Text(list[index]["title"] == "MyTube2" ? "" : "   ${list[index]["count"]}首",
                             style: const TextStyle(
                               color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
                               fontSize: 14

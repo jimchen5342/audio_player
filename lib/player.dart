@@ -94,20 +94,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       );
       songs.add(item);
     }
-    _audioHandler ??= await AudioService.init(
-      builder: () => AudioPlayerHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
-        androidNotificationChannelName: '音樂播放器',
-        androidNotificationOngoing: true,
-        androidNotificationIcon: "drawable/ic_stat_music_note"
-      ),
-    );
-    
-    _audioHandler!.init();
-    if(loop == 1) {
-      _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
+    if(songs.isNotEmpty) {
+      _audioHandler ??= await AudioService.init(
+        builder: () => AudioPlayerHandler(),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
+          androidNotificationChannelName: '音樂播放器',
+          androidNotificationOngoing: true,
+          androidNotificationIcon: "drawable/ic_stat_music_note"
+        ),
+      );
+      
+      _audioHandler!.init();
+      if(loop == 1) {
+        _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
+      }      
     }
+
     return;
   }
 
@@ -452,8 +455,9 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) skipToNext();
     });
-    setSong(songs.first);
-    
+    if(songs.isNotEmpty) {
+      setSong(songs.first);
+    }
   }
 
   Future<void> setLoopMode(LoopMode mode) async {
