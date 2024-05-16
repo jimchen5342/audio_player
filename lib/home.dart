@@ -307,7 +307,6 @@ class _HomeState extends State<Home> {
   }
 
   void _animateToIndex(int index) {
-    
     _controller.animateTo(
       (index - 2) * _height,
       duration: const Duration(seconds: 2),

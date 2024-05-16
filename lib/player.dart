@@ -95,6 +95,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     for(var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
       var duration = await player.setUrl(fullName);
+      if(title == "MyTube2") {
+        var f1 = File(fullName);
+        // print("file: $fullName: ${f1.lengthSync()}");
+        if(f1.lengthSync() == 0){
+          f1.deleteSync();
+          continue;
+        }
+      }
       String songName = trim(list[i]);
       String author = "";
       if(title == "MyTube2") {
