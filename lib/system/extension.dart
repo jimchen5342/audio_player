@@ -7,3 +7,11 @@ extension DurationParse on Duration{
     return duration;
 	}
 }
+
+extension StringnParse on String{
+  bool isNumeric(){
+    RegExp numeric = RegExp(r'^-?[0-9]+$');
+    return numeric.hasMatch(this);
+  }
+}
+  

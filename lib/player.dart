@@ -61,7 +61,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       defaultSleepTime = await Storage.getInt("sleepTime");
       loop = await Storage.getInt("loop");
 
-      if(songs.isEmpty || active != path) {
+      if(songs.isEmpty || active != path || title == "MyTube2") {
         songs = [];
         await initial();
         await Storage.setString("playDirectory", path);
@@ -109,7 +109,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       } else if(songName.contains("-")) {
         List<String> arr = songName.split("-");
         songName = arr[1].trim();
-        if(arr[0].trim().length > 2) { // 有可能是數字，不要
+        if(! arr[0].trim().isNumeric()) { // 有可能是數字，不要
           author = arr[0].trim();          
         }
       }

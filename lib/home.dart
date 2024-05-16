@@ -46,7 +46,6 @@ class _HomeState extends State<Home> {
       }
     });
 
-
   }
 
   invokePermission() async {
@@ -165,11 +164,36 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Drawer drawer() {
+  Drawer drawer() { // 還沒寫完，2024-05-16
+    // var blackList = await Storage.getString("blackList");
     List<Widget> children = [];
     final titles = ['Java', 'Python', 'JavaScript'];
 
-    Widget header = Container();
+    Widget header = Container(
+      height: 60,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        color:  Colors.deepOrange,
+        // border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+      )
+    );
+
+    Widget footer = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        // color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
+        border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+      ),
+      child: const Text("Jimchen Chen, 2024-05-16",
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          // color: Colors.white
+          fontSize: 20
+        )
+      )
+    );
 
     for(var i = 0; i < titles.length; i++) {
       children.add(ListTile(
@@ -183,46 +207,15 @@ class _HomeState extends State<Home> {
     return  Drawer(
       child: Column(
         children: [
-          Container(
-            height: 60,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: const BoxDecoration(
-              color:  Colors.deepOrange,
-              // border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-            ),
-            // child: const Text("Jimchen Chen, 2024-05-16",
-            //   textAlign: TextAlign.center,
-            //   style: TextStyle(
-            //     // color: Colors.white
-            //     fontSize: 20
-            //   )
-            // )
-          ),
+          header,
           Expanded(flex: 1,
             child: ListView(
               children: children,
             )
           ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: const BoxDecoration(
-              // color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
-              border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-            ),
-            child: const Text("Jimchen Chen, 2024-05-16",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                // color: Colors.white
-                fontSize: 20
-              )
-            )
-          ),
-          
+          footer
         ]
       )
-      
     );
   }
 
@@ -236,7 +229,7 @@ class _HomeState extends State<Home> {
         return Container(
           decoration: BoxDecoration(
             color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
-            border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+            border: const Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
           ),
           child: Row(
             children: [
@@ -266,8 +259,8 @@ class _HomeState extends State<Home> {
                               fontSize: 18
                             )
                           ),
-                          if(list[index]["count"] != null)
-                            Text(list[index]["title"] == "MyTube2" ? "" : "   ${list[index]["count"]}首",
+                          if(list[index]["title"] != "MyTube2" && list[index]["count"] != null)
+                            Text("   ${list[index]["count"]}首",
                               style: const TextStyle(
                                 color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
                                 fontSize: 14
@@ -313,7 +306,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _animateToIndex(int index) { // 還沒寫
+  void _animateToIndex(int index) {
     
     _controller.animateTo(
       (index - 2) * _height,
