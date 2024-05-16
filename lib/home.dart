@@ -108,13 +108,12 @@ class _HomeState extends State<Home> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          // leading: IconButton(
-          //   icon: const Icon(
-          //     Icons.arrow_back_ios_sharp,
-          //     color: Colors.white,
-          //   ),
-          //   onPressed: () => backTo(),
-          // ),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
           title: const Text('音樂播放器',
             style: TextStyle( color:Colors.white,)
           ),
@@ -159,12 +158,71 @@ class _HomeState extends State<Home> {
             }
             backTo();
           },
-          child: Container(
-            color: Colors.black87,
-            child: body()
-          ),
+          child: Container( color: Colors.black87, child: body() ),
         ),
+        drawer: drawer(),
       )
+    );
+  }
+
+  Drawer drawer() {
+    List<Widget> children = [];
+    final titles = ['Java', 'Python', 'JavaScript'];
+
+    Widget header = Container();
+
+    for(var i = 0; i < titles.length; i++) {
+      children.add(ListTile(
+          title: Text(titles[i]),
+          onTap: () {
+            // 彈出路由
+            Navigator.pop(context);
+          }
+      ));
+    }
+    return  Drawer(
+      child: Column(
+        children: [
+          Container(
+            height: 60,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: const BoxDecoration(
+              color:  Colors.deepOrange,
+              // border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+            ),
+            // child: const Text("Jimchen Chen, 2024-05-16",
+            //   textAlign: TextAlign.center,
+            //   style: TextStyle(
+            //     // color: Colors.white
+            //     fontSize: 20
+            //   )
+            // )
+          ),
+          Expanded(flex: 1,
+            child: ListView(
+              children: children,
+            )
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: const BoxDecoration(
+              // color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
+              border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+            ),
+            child: const Text("Jimchen Chen, 2024-05-16",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                // color: Colors.white
+                fontSize: 20
+              )
+            )
+          ),
+          
+        ]
+      )
+      
     );
   }
 

@@ -106,15 +106,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             break;
           }
         }
-        // var obj = playlist.firstWhere((e) => e["audioName"] == fullName);
-        // if(obj != null) {
-        //   songName = obj["title"];
-        //   author = obj["author"];
-        // }
       } else if(songName.contains("-")) {
         List<String> arr = songName.split("-");
-        songName = arr[0].trim();
-        author = arr[1].trim();
+        songName = arr[1].trim();
+        if(arr[0].trim().length > 2) { // 有可能是數字，不要
+          author = arr[0].trim();          
+        }
       }
 
       var item = MediaItem(
@@ -329,12 +326,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       width: 20,
       margin: const EdgeInsets.only(right: 5),
       // decoration: BoxDecoration(
-      //     border: Border.all(width: 1.0, color: Colors.white),
+      //   border: Border.all(width: 1.0, color: Colors.white),
       // ),
       child: active 
         ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
-        : Text((index + 1).toString(), 
-            textAlign: TextAlign.right,
+        : Text((index < 9 ? "0" : "") + (index + 1).toString(), 
+            textAlign: TextAlign.center,
             style: const TextStyle(color:Colors.grey, fontSize: 12)
           ) 
     );
@@ -349,7 +346,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           style: const TextStyle(color:Colors.white, fontSize: 18)
         ),
         if(song.artist != null && song.artist!.isNotEmpty)
-          Text(song.artist!,
+          Text("  ${song.artist!}",
             softWrap: true,
             overflow: TextOverflow.ellipsis,
             textDirection: TextDirection.ltr,
