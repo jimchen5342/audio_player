@@ -94,15 +94,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
     for(var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
-      var duration = await player.setUrl(fullName);
       if(title == "MyTube2") {
         var f1 = File(fullName);
-        // print("file: $fullName: ${f1.lengthSync()}");
+        print("file: $fullName: ${f1.lengthSync()}");
         if(f1.lengthSync() == 0){
           f1.deleteSync();
           continue;
         }
       }
+
+      var duration = await player.setUrl(fullName);
       String songName = trim(list[i]);
       String author = "";
       if(title == "MyTube2") {
@@ -332,7 +333,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     }
     Widget widget1 = Container(
       width: 20,
-      margin: const EdgeInsets.only(right: 5),
+      margin: const EdgeInsets.only(right: 2),
       // decoration: BoxDecoration(
       //   border: Border.all(width: 1.0, color: Colors.white),
       // ),
@@ -366,7 +367,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     return Container(
       decoration: const BoxDecoration(
         // color: Colors.green,
-        border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+        border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)),
       ),
       child: Row(
         children: [
@@ -380,16 +381,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                   _audioHandler!.play();
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(5),
                   child: Row(
                     children: [
                       widget1,
                       Expanded( flex: 1, child: widget2),
-                      Padding(padding: const EdgeInsets.only(left: 8.0),
+                      Padding(padding: const EdgeInsets.only(left: 2.0),
                         child: Text(duration,
-                          softWrap: true,
-                          overflow: TextOverflow.ellipsis,
-                          textDirection: TextDirection.ltr,
+                          // softWrap: true,
+                          // overflow: TextOverflow.ellipsis,
+                          // textDirection: TextDirection.ltr,
                           style: const TextStyle(
                             color:Colors.white,
                             fontSize: 14

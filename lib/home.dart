@@ -44,6 +44,9 @@ class _HomeState extends State<Home> {
           }
         });
       }
+
+      // var blacklist = await Storage.getString("blackList");
+      // print(blacklist);
     });
 
   }
