@@ -189,7 +189,7 @@ class _HomeState extends State<Home> {
         // color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("Jimchen Chen, 2024-05-16",
+      child: const Text("Jimchen Chen, 2024-05-17",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white

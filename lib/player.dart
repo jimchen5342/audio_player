@@ -115,7 +115,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             break;
           }
         }
-      } else if(songName.contains("-")) {
+      } else if(songName.contains("-") && ! songName.contains("=")) {
         List<String> arr = songName.split("-");
         songName = arr[1].trim();
         if(! arr[0].trim().isNumeric()) { // 有可能是數字，不要
