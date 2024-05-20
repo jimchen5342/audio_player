@@ -13,7 +13,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [];
-  String active = "", blackList = "";
+  String active = "", myBlackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
   
@@ -22,11 +22,12 @@ class _HomeState extends State<Home> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
+
       active = await Storage.getString("activeDirectory");
       list = await Storage.getJsonList("Directories");
       int activeIndex = -1;
       if(list.isEmpty) {
-        await refresh();        
+        await refreshDirectory();        
       } else {
         if(list.length > 10) {
           for(var i = 0; i < list.length; i++) {
@@ -45,8 +46,6 @@ class _HomeState extends State<Home> {
         });
       }
 
-      // var blacklist = await Storage.getString("blackList");
-      // print(blacklist);
     });
 
   }
@@ -75,6 +74,8 @@ class _HomeState extends State<Home> {
     // await Storage.remove("Directories"); // 測試用
     // await Storage.remove("blackList"); // 測試用
 
+      var blacklist = await Storage.getString("blackList");
+      print(blacklist);
     setTimeout(() => {
 
     }, 1000);
@@ -85,7 +86,7 @@ class _HomeState extends State<Home> {
     super.didChangeDependencies();
   }
 
-  refresh() async {
+  refreshDirectory() async {
     await EasyLoading.show(status: 'loading...');
     Archive archive = Archive();
     list = await archive.getDirectories(await Archive.root());
@@ -120,32 +121,32 @@ class _HomeState extends State<Home> {
             style: TextStyle( color:Colors.white,)
           ),
           actions: [
-            if(blackList.isEmpty)
+            if(myBlackList.isEmpty) // 更新
               IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
                 onPressed: () async {
-                  await refresh();
+                  await refreshDirectory();
                 },
               ),
-            if(blackList.isNotEmpty)
-            IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
-                onPressed: () async {
-                  blackList = "";
-                  setState(() {});
-                }
-            ),
-            if(blackList.isNotEmpty)
+            if(myBlackList.isNotEmpty) // 取消刪除
+              IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
+                  onPressed: () async {
+                    myBlackList = "";
+                    setState(() {});
+                  }
+              ),
+            if(myBlackList.isNotEmpty) // 確定刪除
               IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
-                    if(blackList.contains("'${list[i]["path"]}'")) {
+                    if(myBlackList.contains("'${list[i]["path"]}'")) {
                       list.removeAt(i);
                     }
                   }
                   await Storage.setJsonList("Directories", list);
 
-                  blackList += await Storage.getString("blackList");
-                  await Storage.setString("blackList", blackList);
-                  blackList = "";
+                  myBlackList += await Storage.getString("blackList");
+                  await Storage.setString("blackList", myBlackList);
+                  myBlackList = "";
                   setState(() {});
                 },
               ),
@@ -163,12 +164,28 @@ class _HomeState extends State<Home> {
           child: Container( color: Colors.black87, child: body() ),
         ),
         drawer: drawer(),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.folder),
+              label: "檔案"
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.featured_play_list),
+              label: "清單"
+            ),
+          ],
+          currentIndex: 0,
+          selectedItemColor: Colors.amber[800],
+          onTap: (int index) {
+            print(index);
+          },
+       ),
       )
     );
   }
 
   Drawer drawer() { // 還沒寫完，2024-05-16
-    // var blackList = await Storage.getString("blackList");
     List<Widget> children = [];
     final titles = ['Java', 'Python', 'JavaScript'];
 
@@ -202,7 +219,6 @@ class _HomeState extends State<Home> {
       children.add(ListTile(
           title: Text(titles[i]),
           onTap: () {
-            // 彈出路由
             Navigator.pop(context);
           }
       ));
@@ -275,30 +291,30 @@ class _HomeState extends State<Home> {
                   )
                 )
               ),
-              if(blackList.isEmpty)
+              if(myBlackList.isEmpty)
                 IconButton(
                   iconSize: 20,
                   icon: Icon(Icons.delete, color: Colors.white),
                   onPressed: () {
-                    blackList = path;
+                    myBlackList = path;
                     setState(() { });
                   },
                 ),
-              if(blackList.isNotEmpty && blackList.contains(path))
+              if(myBlackList.isNotEmpty && myBlackList.contains(path))
                 IconButton(
                   iconSize: 20,
                   icon: Icon(Icons.check_box_rounded, color: Colors.white),
                   onPressed: () {
-                    blackList = blackList.replaceAll(path, "");
+                    myBlackList = myBlackList.replaceAll(path, "");
                     setState(() { });
                   },
                 ),
-              if(blackList.isNotEmpty && ! blackList.contains(path))
+              if(myBlackList.isNotEmpty && ! myBlackList.contains(path))
                 IconButton(
                   iconSize: 20,
                   icon: Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
                   onPressed: () {
-                    blackList += path;
+                    myBlackList += path;
                     setState(() { });
                   },
                 ),
