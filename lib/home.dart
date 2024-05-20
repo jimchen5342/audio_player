@@ -111,6 +111,7 @@ class _HomeState extends State<Home> {
 
   initialCollection() async {
     activeDirectory = await Storage.getString("activeCollect");
+    print("activeCollect: ${await Storage.getString("activeCollect")}");
     list = await Storage.getJsonList("Collects");
     if(list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
@@ -293,7 +294,9 @@ class _HomeState extends State<Home> {
         String path = "'${list[index]["path"]}'";
         return Container(
           decoration: BoxDecoration(
-            color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
+            color: (activeBar == 0 && activeDirectory == list[index]["path"]) 
+              ||  (activeBar == 1 && activeDirectory == list[index]["title"]) 
+              ? Colors.orange : Colors.transparent,
             border: const Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
           ),
           child: Row(
@@ -304,6 +307,11 @@ class _HomeState extends State<Home> {
                   color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
                     onTap: () async {
+                      if(activeBar == 1 && list[index]["datas"].length == 0) {
+                        alert("沒有檔案");
+                        return;
+                      }
+
                       Navigator.pushNamed(context, '/player', arguments: list[index]);
 
                       activeDirectory = activeBar == 0 ? list[index]["path"] : list[index]["title"];
@@ -330,8 +338,15 @@ class _HomeState extends State<Home> {
                               fontSize: 18
                             )
                           ),
-                          if(list[index]["title"] != "MyTube2" && list[index]["count"] != null)
+                          if(activeBar == 0 &&list[index]["title"] != "MyTube2" && list[index]["count"] != null)
                             Text("   ${list[index]["count"]}首",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14
+                              )
+                            ),
+                          if(activeBar == 1)
+                            Text("   ${list[index]["datas"].length}首",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14
