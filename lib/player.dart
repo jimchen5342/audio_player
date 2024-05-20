@@ -54,17 +54,26 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String; // 目錄名稱
-      path = arg["path"] as String;
       setState(() {});
 
-      String active = await Storage.getString("playDirectory");
-      defaultSleepTime = await Storage.getInt("sleepTime");
-      loop = await Storage.getInt("loop");
+      if(arg["path"] is String) {
+        path = arg["path"] as String;
 
-      if(songs.isEmpty || active != path || title == "MyTube2") {
+        String active = await Storage.getString("playDirectory");
+        defaultSleepTime = await Storage.getInt("sleepTime");
+        loop = await Storage.getInt("loop");
+
+        if(songs.isEmpty || active != path || title == "MyTube2") {
+          songs = [];
+          await initialDirectory();
+          await Storage.setString("playDirectory", path);
+        }        
+      } else {
         songs = [];
-        await initial();
-        await Storage.setString("playDirectory", path);
+
+        print(arg["datas"]);
+
+        await Storage.setString("playDirectory", "");
       }
       isReady = true;
       setState(() { });
@@ -80,7 +89,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     return title;
   }
 
-  Future<void> initial() async {
+  Future<void> initialDirectory() async {
     String root = await Archive.root();
     Archive archive = Archive();
     List<String> list = await archive.getFiles(path);
@@ -96,7 +105,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       var fullName = "$root/$path/${list[i]}";
       if(title == "MyTube2") {
         var f1 = File(fullName);
-        print("file: $fullName: ${f1.lengthSync()}");
+        // print("file: $fullName: ${f1.lengthSync()}");
         if(f1.lengthSync() == 0){
           f1.deleteSync();
           continue;
@@ -160,7 +169,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   void reassemble() async { // develope mode
     super.reassemble();
-    // initial();
+    // initialDirectory();
     _animateToIndex(0);
   }
 

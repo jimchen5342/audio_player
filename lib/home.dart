@@ -66,6 +66,7 @@ class _HomeState extends State<Home> {
   }
 
   switchBar() async {
+    list = [];
     if(activeBar == 0) {
       await initialDirectory();
     } else {
@@ -109,7 +110,33 @@ class _HomeState extends State<Home> {
   }
 
   initialCollection() async {
-    
+    activeDirectory = await Storage.getString("activeCollect");
+    list = await Storage.getJsonList("Collects");
+    if(list.isEmpty) {
+      list.add({"title": "我的最愛", "datas": []});
+      list.add({"title": "VOA", "datas": []});
+      list.add({"title": "日語", "datas": []});
+      await Storage.setJsonList("Collects", list);
+    } else {
+      int activeIndex = -1;
+
+      if(list.length > 10) {
+        for(var i = 0; i < list.length; i++) {
+          if(activeDirectory == list[i]["title"]){
+            activeIndex = i;
+            break;
+          }
+        }
+      }
+      setState(() {
+        if(activeIndex > -1) {
+          setTimeout(() => {
+            _animateToIndex(activeIndex)
+          }, 600);
+        }
+      });
+    }
+    setState(() {});
   }
 
   @override
@@ -137,20 +164,20 @@ class _HomeState extends State<Home> {
             style: TextStyle( color:Colors.white,)
           ),
           actions: [
-            if(myBlackList.isEmpty) // 更新
+            if(activeBar == 0 && myBlackList.isEmpty) // 更新
               IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
                 onPressed: () async {
                   await refreshDirectory();
                 },
               ),
-            if(myBlackList.isNotEmpty) // 取消刪除
+            if(activeBar == 0 && myBlackList.isNotEmpty) // 取消刪除
               IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
                   onPressed: () async {
                     myBlackList = "";
                     setState(() {});
                   }
               ),
-            if(myBlackList.isNotEmpty) // 確定刪除
+            if(activeBar == 0 && myBlackList.isNotEmpty) // 確定刪除
               IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
@@ -199,7 +226,6 @@ class _HomeState extends State<Home> {
             setState(() {
               switchBar();
             });
-
           },
        ),
       )
@@ -279,9 +305,15 @@ class _HomeState extends State<Home> {
                   child: InkWell (
                     onTap: () async {
                       Navigator.pushNamed(context, '/player', arguments: list[index]);
-                      activeDirectory = list[index]["path"];
+
+                      activeDirectory = activeBar == 0 ? list[index]["path"] : list[index]["title"];
                       setState(() {});
-                      await Storage.setString("activeDirectory", activeDirectory);
+
+                      if(activeBar == 0) {
+                        await Storage.setString("activeDirectory", activeDirectory);
+                      } else {
+                        await Storage.setString("activeCollect", activeDirectory);
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.only(left: 5),
@@ -311,7 +343,7 @@ class _HomeState extends State<Home> {
                   )
                 )
               ),
-              if(myBlackList.isEmpty)
+              if(activeBar == 0 && myBlackList.isEmpty)
                 IconButton(
                   iconSize: 20,
                   icon: const Icon(Icons.delete, color: Colors.white),
