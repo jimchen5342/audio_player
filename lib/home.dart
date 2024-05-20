@@ -306,6 +306,9 @@ class _HomeState extends State<Home> {
                 child: Material(
                   color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
+                    // onLongPress: () {
+                    //   alert("longpress");
+                    // },
                     onTap: () async {
                       if(activeBar == 1 && list[index]["datas"].length == 0) {
                         alert("沒有檔案");

@@ -385,6 +385,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                // onLongPress: () {
+                //   alert("longpress");
+                // },
                 onTap: () {
                   _audioHandler!.setSong(song);
                   _audioHandler!.play();
