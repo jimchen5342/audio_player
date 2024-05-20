@@ -13,39 +13,18 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [];
-  String active = "", myBlackList = "";
+  String activeDirectory = "", myBlackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
+  int activeBar = 0;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
-
-      active = await Storage.getString("activeDirectory");
-      list = await Storage.getJsonList("Directories");
-      int activeIndex = -1;
-      if(list.isEmpty) {
-        await refreshDirectory();        
-      } else {
-        if(list.length > 10) {
-          for(var i = 0; i < list.length; i++) {
-            if(active == list[i]["path"]){
-              activeIndex = i;
-              break;
-            }
-          }
-        }
-        setState(() {
-          if(activeIndex > -1) {
-            setTimeout(() => {
-              _animateToIndex(activeIndex)
-            }, 600);
-          }
-        });
-      }
-
+      activeBar = await Storage.getInt("activeBar");
+      switchBar();
     });
 
   }
@@ -86,6 +65,39 @@ class _HomeState extends State<Home> {
     super.didChangeDependencies();
   }
 
+  switchBar() async {
+    if(activeBar == 0) {
+      await initialDirectory();
+    } else {
+      await initialCollection();
+    }
+  }
+
+  initialDirectory() async {
+    activeDirectory = await Storage.getString("activeDirectory");
+    list = await Storage.getJsonList("Directories");
+    int activeIndex = -1;
+    if(list.isEmpty) {
+      await refreshDirectory();        
+    } else {
+      if(list.length > 10) {
+        for(var i = 0; i < list.length; i++) {
+          if(activeDirectory == list[i]["path"]){
+            activeIndex = i;
+            break;
+          }
+        }
+      }
+      setState(() {
+        if(activeIndex > -1) {
+          setTimeout(() => {
+            _animateToIndex(activeIndex)
+          }, 600);
+        }
+      });
+    }
+  }
+
   refreshDirectory() async {
     await EasyLoading.show(status: 'loading...');
     Archive archive = Archive();
@@ -94,6 +106,10 @@ class _HomeState extends State<Home> {
     await Storage.setJsonList("Directories", list); 
     setState(() {});
     await EasyLoading.dismiss();
+  }
+
+  initialCollection() async {
+    
   }
 
   @override
@@ -175,10 +191,15 @@ class _HomeState extends State<Home> {
               label: "清單"
             ),
           ],
-          currentIndex: 0,
+          currentIndex: activeBar,
           selectedItemColor: Colors.amber[800],
           onTap: (int index) {
-            print(index);
+            activeBar = index;
+            Storage.setInt("activeBar", activeBar);
+            setState(() {
+              switchBar();
+            });
+
           },
        ),
       )
@@ -203,7 +224,6 @@ class _HomeState extends State<Home> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: const BoxDecoration(
-        // color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
       child: const Text("Jimchen Chen, 2024-05-17",
@@ -247,7 +267,7 @@ class _HomeState extends State<Home> {
         String path = "'${list[index]["path"]}'";
         return Container(
           decoration: BoxDecoration(
-            color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
+            color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
             border: const Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
           ),
           child: Row(
@@ -255,13 +275,13 @@ class _HomeState extends State<Home> {
               Expanded(
                 flex: 1,
                 child: Material(
-                  color: active == list[index]["path"] ? Colors.orange : Colors.transparent,
+                  color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
                     onTap: () async {
                       Navigator.pushNamed(context, '/player', arguments: list[index]);
-                      active = list[index]["path"];
+                      activeDirectory = list[index]["path"];
                       setState(() {});
-                      await Storage.setString("activeDirectory", active);
+                      await Storage.setString("activeDirectory", activeDirectory);
                     },
                     child: Container(
                       padding: const EdgeInsets.only(left: 5),
@@ -273,7 +293,7 @@ class _HomeState extends State<Home> {
                         children: [
                           Text("${list[index]["title"]}",
                             style: const TextStyle(
-                              color: Colors.white, // active == list[index]["path"] ? Colors.white : null,
+                              color: Colors.white,
                               fontWeight: FontWeight.w600,
                               fontSize: 18
                             )
@@ -281,7 +301,7 @@ class _HomeState extends State<Home> {
                           if(list[index]["title"] != "MyTube2" && list[index]["count"] != null)
                             Text("   ${list[index]["count"]}首",
                               style: const TextStyle(
-                                color: Colors.white, // active == list[index]["path"] ?Colors.white : null,
+                                color: Colors.white,
                                 fontSize: 14
                               )
                             )
@@ -294,7 +314,7 @@ class _HomeState extends State<Home> {
               if(myBlackList.isEmpty)
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.delete, color: Colors.white),
+                  icon: const Icon(Icons.delete, color: Colors.white),
                   onPressed: () {
                     myBlackList = path;
                     setState(() { });
@@ -303,7 +323,7 @@ class _HomeState extends State<Home> {
               if(myBlackList.isNotEmpty && myBlackList.contains(path))
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.check_box_rounded, color: Colors.white),
+                  icon: const Icon(Icons.check_box_rounded, color: Colors.white),
                   onPressed: () {
                     myBlackList = myBlackList.replaceAll(path, "");
                     setState(() { });
@@ -312,7 +332,7 @@ class _HomeState extends State<Home> {
               if(myBlackList.isNotEmpty && ! myBlackList.contains(path))
                 IconButton(
                   iconSize: 20,
-                  icon: Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
+                  icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
                   onPressed: () {
                     myBlackList += path;
                     setState(() { });
