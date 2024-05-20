@@ -70,9 +70,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         }        
       } else {
         songs = [];
-
-        print(arg["datas"]);
-
+        // print(arg["datas"]);
+        await initialCollect(arg["datas"]);
         await Storage.setString("playDirectory", "");
       }
       isReady = true;
@@ -141,6 +140,30 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       );
       songs.add(item);
     }
+
+    await intitialAudio();
+
+    return;
+  }
+
+  Future<void> initialCollect(List datas) async {
+    final player = AudioPlayer();
+    for(var i = 0; i < datas.length; i++) {
+      var songName = "";
+      var duration = await player.setUrl(datas[i]);
+      var item = MediaItem(
+        id: datas[i],
+        title: songName,
+        album: title,  // 目錄名稱
+        // artist: author,
+        duration: duration,
+      );
+      songs.add(item);
+    }
+    await intitialAudio();
+  }
+
+  Future<void> intitialAudio() async {
     if(songs.isNotEmpty) {
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
@@ -157,10 +180,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
       }
     }
-
-    return;
   }
-
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
