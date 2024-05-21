@@ -21,7 +21,7 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
-  String title = "", path = "";
+  String title = "", path = "", mode = "Directory";
   bool isReady = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
@@ -57,6 +57,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       setState(() {});
 
       if(arg["path"] is String) {
+        mode = "Directory";
         path = arg["path"] as String;
 
         String active = await Storage.getString("playDirectory");
@@ -69,6 +70,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           await Storage.setString("playDirectory", path);
         }        
       } else {
+        mode = "Collect";
         songs = [];
         // print(arg["datas"]);
         await initialCollect(arg["datas"]);
@@ -197,7 +199,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   dispose() async {
     super.dispose();
     _controller.dispose();
-    WidgetsBinding.instance.removeObserver(this); // 移除监听器
+    WidgetsBinding.instance.removeObserver(this);
+    // _audioHandler!.destroy();
+    // _audioHandler = null;
+    // songs = [];
   }
 
   @override
@@ -405,9 +410,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                // onLongPress: () {
-                //   alert("longpress");
-                // },
+                onLongPress: () {
+                  onLongPress(index);
+                },
                 onTap: () {
                   _audioHandler!.setSong(song);
                   _audioHandler!.play();
@@ -438,6 +443,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         ],
       )
     );
+  }
+  onLongPress(int index) {
+    if(mode == "Directory") {
+
+    } else {
+
+    }
+
   }
   
   Widget _buildControls() {
@@ -537,36 +550,40 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   int _oldSeconds = 0;
 
   void init() async {
-    _player.playbackEventStream.listen(_broadcastState);
     currentPosition.add(Duration.zero);
+    if(queue.value.isEmpty) {
+      _player.playbackEventStream.listen(_broadcastState);
 
-    AudioService.position.listen((Duration position) {
-      if(position.inSeconds != _oldSeconds) {
-        currentPosition.add(position);
-        _oldSeconds = position.inSeconds;
+      AudioService.position.listen((Duration position) {
+        if(position.inSeconds != _oldSeconds) {
+          currentPosition.add(position);
+          _oldSeconds = position.inSeconds;
 
-        if(sleepTime != 0) {
-          if(spendSeconds >= sleepTime * 60) {
-            pause();
-            spendSeconds = 0;
-          } else if(position.inSeconds > 0) {
-            spendSeconds++;
-          }
-        } 
-      }
-    });
-
-    if(queue.value.isNotEmpty) {
+          if(sleepTime != 0) {
+            if(spendSeconds >= sleepTime * 60) {
+              pause();
+              spendSeconds = 0;
+            } else if(position.inSeconds > 0) {
+              spendSeconds++;
+            }
+          } 
+        }
+      });
+      _player.processingStateStream.listen((state) {
+        if (state == ProcessingState.completed) skipToNext();
+      });
+    } else {
       stop();
       queue.value.clear();
     }
     queue.add(songs);
-    _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed) skipToNext();
-    });
+
     if(songs.isNotEmpty) {
       setSong(songs.first);
     }
+  }
+  void destroy() {
+    _player.dispose();
   }
 
   Future<void> setLoopMode(LoopMode mode) async {
