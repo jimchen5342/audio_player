@@ -21,16 +21,17 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
-  String title = "", path = "", mode = "Directory";
-  bool isReady = false;
+  String title = "", path = "", mode = "Directory", marked = "";
+  bool isReady = false, bEdit = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     Widget btn = IconButton(
-      icon: Icon(iconData, color: Colors.white, size: 30),
-      onPressed: onPressed,
+      color: Colors.white,
+      icon: Icon(iconData, color: visible ? Colors.white : Colors.grey, size: visible ? 30 : 20),
+      onPressed: visible ? onPressed : null,
     );
 
     return Container(
@@ -40,7 +41,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       //   border: Border.all(color: Colors.blueAccent),
       //   borderRadius: BorderRadius.circular(10),
       // ),
-      child: visible ? btn : null
+      child: btn // visible ? btn : null
     );
   }
 
@@ -237,10 +238,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 flex: 1,
                 child: _buildListview(song),
               ),
-              if(_audioHandler != null && songs.isNotEmpty)
+              if(!bEdit && _audioHandler != null && songs.isNotEmpty)
                 _buildSlider(),
-              if(_audioHandler != null && songs.isNotEmpty)
+              if(!bEdit && _audioHandler != null && songs.isNotEmpty)
                 _buildControls(),
+              if(bEdit)
+                _buildEdit()
             ]),
           );
         }
@@ -371,7 +374,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       // decoration: BoxDecoration(
       //   border: Border.all(width: 1.0, color: Colors.white),
       // ),
-      child: active 
+      child: active && !bEdit
         ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
         : Text((index < 9 ? "0" : "") + (index + 1).toString(), 
             textAlign: TextAlign.center,
@@ -411,11 +414,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               color: Colors.transparent,
               child: InkWell(
                 onLongPress: () {
-                  onLongPress(index);
+                  if(bEdit == false) {
+                    onLongPress(index);
+                  }
                 },
                 onTap: () {
-                  _audioHandler!.setSong(song);
-                  _audioHandler!.play();
+                  if(bEdit == false) {
+                    _audioHandler!.setSong(song);
+                    _audioHandler!.play();
+                  } else {
+
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(5),
@@ -423,17 +432,36 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                     children: [
                       widget1,
                       Expanded( flex: 1, child: widget2),
-                      Padding(padding: const EdgeInsets.only(left: 2.0),
-                        child: Text(duration,
-                          // softWrap: true,
-                          // overflow: TextOverflow.ellipsis,
-                          // textDirection: TextDirection.ltr,
-                          style: const TextStyle(
-                            color:Colors.white,
-                            fontSize: 14
+                      if(!bEdit) 
+                        Padding(padding: const EdgeInsets.only(left: 2.0),
+                          child: Text(duration,
+                            // softWrap: true,
+                            // overflow: TextOverflow.ellipsis,
+                            // textDirection: TextDirection.ltr,
+                            style: const TextStyle(
+                              color:Colors.white,
+                              fontSize: 14
+                            )
                           )
-                        )
-                      )
+                        ),
+                      if(bEdit && marked.contains("'$index'"))
+                        IconButton(
+                          iconSize: 20,
+                          icon: const Icon(Icons.check_box_rounded, color: Colors.white),
+                          onPressed: () {
+                            marked = marked.replaceAll("'$index'", "");
+                            setState(() { });
+                          },
+                        ),
+                      if(bEdit && ! marked.contains("'$index'"))
+                        IconButton(
+                          iconSize: 20,
+                          icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
+                          onPressed: () {
+                            marked += "'$index'";
+                            setState(() { });
+                          },
+                        ),
                     ]
                   )
                 ),
@@ -444,13 +472,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       )
     );
   }
+  
   onLongPress(int index) {
+    _audioHandler!.stop();
+    marked = "'$index'";
     if(mode == "Directory") {
-
+      
     } else {
 
     }
-
+    bEdit = true;
+    setState(() { });
   }
   
   Widget _buildControls() {
@@ -521,6 +553,40 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         );
       }
     );
+  }
+
+  Widget _buildEdit() {
+    return Container(   
+      height: 60,
+      // decoration: BoxDecoration(
+      //   border: Border.all(color: Colors.blueAccent),
+      //   // borderRadius: BorderRadius.circular(10),
+      // ),
+      child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if(mode == "Directory" && marked.isNotEmpty)
+              _button(Icons.bookmark, addBookMark, visible: true),
+            if(mode != "Directory" && marked.isNotEmpty)
+              _button(Icons.content_cut, cut, visible: true),
+            _button(Icons.undo, undo, visible: true),
+          ],
+        ),
+    );
+  }
+
+  addBookMark() {
+
+  }
+
+  cut() {
+
+  }
+
+  undo() {
+    bEdit = false;
+    marked = "";
+    setState(() {});
   }
 
   void _animateToIndex(int index) {
