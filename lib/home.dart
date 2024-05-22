@@ -13,6 +13,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [];
+  List<dynamic> listBlackList = [];
   String activeDirectory = "", myBlackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
@@ -25,6 +26,18 @@ class _HomeState extends State<Home> {
       await invokePermission();
       activeBar = await Storage.getInt("activeBar");
       switchBar();
+
+      String blacklist = await Storage.getString("blackList");
+      if(blacklist.isNotEmpty) {
+        List<String> arr = blacklist.split("''");
+        arr[0] = arr[0].substring(1);
+        String s2 = arr[arr.length - 1];
+        arr[arr.length - 1] = s2.substring(0, s2.length - 1);
+        await Storage.remove("blackList");
+        await Storage.setJsonList("BlackList", arr); 
+      }
+      listBlackList = await Storage.getJsonList("BlackList");
+      
     });
 
   }

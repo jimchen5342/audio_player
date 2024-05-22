@@ -18,7 +18,12 @@ class Archive {
   }
 
   Future<List<dynamic>> getDirectories(String directoryPath) async {
-    String blackList = await Storage.getString("blackList");
+    String blackList = "";
+    List<dynamic> arr = await Storage.getJsonList("BlackList");
+    for(var i = 0; i < arr.length; i++) {
+      blackList += "'${arr[i]}'";
+    }
+
     // blackList = "'MyTube'";
     String root = await Archive.root();
     List<dynamic> list = [];
