@@ -152,13 +152,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Future<void> initialCollect(List datas) async {
     final player = AudioPlayer();
     for(var i = 0; i < datas.length; i++) {
-      var songName = "";
+      String path = datas[i];
+      List paths = path.split("/");
+      // print(datas[i]);
       var duration = await player.setUrl(datas[i]);
       var item = MediaItem(
         id: datas[i],
-        title: songName,
-        album: title,  // 目錄名稱
-        // artist: author,
+        title: trim(paths[paths.length - 1]),
+        album: title,
+        artist: paths[paths.length - 2],
         duration: duration,
       );
       songs.add(item);
@@ -575,8 +577,55 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  addBookMark() {
+  addBookMark() async { // 加入清單
+    List<String> books = marked.split("''");
 
+    List list = await Storage.getJsonList("Collects");
+    Widget listview =  Container(
+      height: 300.0, // Change as per your requirement
+      width: 310.0, // Change as per your requirement
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: list.length,
+        itemBuilder: (BuildContext context, int index) {
+          return ListTile(
+            title: Text(list[index]["title"]),
+            onTap: () async {
+              if(mode == "Directory") {
+                for(var i = 0; i < books.length; i++) {
+                  int j = int.parse(books[i].replaceAll("'", ""));
+                  // print(songs[j].id);
+                  var b = list[index]["datas"].any((item) => item == songs[j].id);
+                  if(! b) {
+                    list[index]["datas"].add(songs[j].id);
+                  }
+                }
+              } else {
+
+              }
+              await Storage.setJsonList("Collects", list);
+              Navigator.of(context).pop();
+            },
+            // selected: selectedFriends.contains(string),
+            // style:  ListTileTheme(selectedColor: Colors.white,),
+          );
+        },
+      ),
+    );
+    
+    
+    // ignore: use_build_context_synchronously
+    showDialog(
+      context: context,
+      // barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('清單'),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
+          content: listview,
+        );
+      }
+    );
   }
 
   cut() {

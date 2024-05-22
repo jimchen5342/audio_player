@@ -111,7 +111,7 @@ class _HomeState extends State<Home> {
 
   initialCollection() async {
     activeDirectory = await Storage.getString("activeCollect");
-    print("activeCollect: ${await Storage.getString("activeCollect")}");
+    // print("activeCollect: ${await Storage.getString("activeCollect")}");
     list = await Storage.getJsonList("Collects");
     if(list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
@@ -253,7 +253,7 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2024-05-21",
+      child: const Text("JimC, 2024-05-22",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white
@@ -318,13 +318,12 @@ class _HomeState extends State<Home> {
                       Navigator.pushNamed(context, '/player', arguments: list[index]);
 
                       activeDirectory = activeBar == 0 ? list[index]["path"] : list[index]["title"];
-                      setState(() {});
-
                       if(activeBar == 0) {
                         await Storage.setString("activeDirectory", activeDirectory);
                       } else {
                         await Storage.setString("activeCollect", activeDirectory);
                       }
+                      setState(() {});
                     },
                     child: Container(
                       padding: const EdgeInsets.only(left: 5),
