@@ -604,6 +604,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
               }
               await Storage.setJsonList("Collects", list);
+              // ignore: use_build_context_synchronously
+              marked = "";
+              bEdit = false;
+              setState(() {});
               Navigator.of(context).pop();
             },
             // selected: selectedFriends.contains(string),
@@ -776,9 +780,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 }
 
 class PlayList {
-
   // PlayList() { }
-
   Future<List> read(String root) async { 
     String s = "";
     File file = File("$root/MyTube2/playlist.txt");
