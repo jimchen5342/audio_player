@@ -315,7 +315,7 @@ class _HomeState extends State<Home> {
                         return;
                       }
 
-                      Navigator.pushNamed(context, '/player', arguments: list[index]);
+                      var dirty = await Navigator.pushNamed(context, '/player', arguments: list[index]);
 
                       activeDirectory = activeBar == 0 ? list[index]["path"] : list[index]["title"];
                       if(activeBar == 0) {
@@ -323,7 +323,11 @@ class _HomeState extends State<Home> {
                       } else {
                         await Storage.setString("activeCollect", activeDirectory);
                       }
-                      setState(() {});
+                      if(dirty is bool && dirty ) {
+                        await initialCollection();
+                      } else {
+                        setState(() {});
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.only(left: 5),

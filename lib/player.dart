@@ -22,7 +22,7 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver{
   String title = "", path = "", mode = "Directory", marked = "";
-  bool isReady = false, bEdit = false;
+  bool isReady = false, bEdit = false, dirty = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
@@ -218,7 +218,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   backTo() {
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(dirty);
   }
 
   @override
@@ -591,17 +591,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           return ListTile(
             title: Text(list[index]["title"]),
             onTap: () async {
-              if(mode == "Directory") {
-                for(var i = 0; i < books.length; i++) {
-                  int j = int.parse(books[i].replaceAll("'", ""));
-                  // print(songs[j].id);
-                  var b = list[index]["datas"].any((item) => item == songs[j].id);
-                  if(! b) {
-                    list[index]["datas"].add(songs[j].id);
-                  }
+              for(var i = 0; i < books.length; i++) {
+                int j = int.parse(books[i].replaceAll("'", ""));
+                // print(songs[j].id);
+                var b = list[index]["datas"].any((item) => item == songs[j].id);
+                if(! b) {
+                  list[index]["datas"].add(songs[j].id);
                 }
-              } else {
-
               }
               await Storage.setJsonList("Collects", list);
               // ignore: use_build_context_synchronously
@@ -632,8 +628,27 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     );
   }
 
-  cut() {
+  cut() async {
+    List list = await Storage.getJsonList("Collects");
+    int index = list.indexWhere((el) => el["title"] == title);
+    if(index != -1) {
+      List<String> books = marked.split("''");
+      for(var i = 0; i < books.length; i++) {
+        int j = int.parse(books[i].replaceAll("'", ""));
 
+        int index2 = list[index]["datas"].indexWhere((el) => el == songs[j].id);
+        if(index2 != -1) {
+          list[index]["datas"].removeAt(index2);
+          songs.removeAt(j);
+          dirty = true;
+        }
+      }
+      await Storage.setJsonList("Collects", list);
+    }
+    
+    marked = "";
+    bEdit = false;
+    setState(() {});
   }
 
   undo() {
