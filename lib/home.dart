@@ -12,8 +12,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<dynamic> list = [];
-  List<dynamic> listBlackList = [];
+  List<dynamic> list = [], listBlackList = [];
   String activeDirectory = "", myBlackList = "";
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
@@ -24,9 +23,8 @@ class _HomeState extends State<Home> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
-      activeBar = await Storage.getInt("activeBar");
-      switchBar();
-
+      
+      //2024-06-01 刪除 -----------------------------
       String blacklist = await Storage.getString("blackList");
       if(blacklist.isNotEmpty) {
         List<String> arr = blacklist.split("''");
@@ -36,10 +34,15 @@ class _HomeState extends State<Home> {
         await Storage.remove("blackList");
         await Storage.setJsonList("BlackList", arr); 
       }
+      //2024-06-01 刪除 -----------------------------
+
+
       listBlackList = await Storage.getJsonList("BlackList");
       
-    });
 
+      activeBar = await Storage.getInt("activeBar");
+      switchBar();
+    });
   }
 
   invokePermission() async {
@@ -66,8 +69,8 @@ class _HomeState extends State<Home> {
     // await Storage.remove("Directories"); // 測試用
     // await Storage.remove("blackList"); // 測試用
 
-      var blacklist = await Storage.getString("blackList");
-      print(blacklist);
+    // listBlackList = await Storage.getJsonList("BlackList");
+    // print(listBlackList);
     setTimeout(() => {
 
     }, 1000);
@@ -115,7 +118,14 @@ class _HomeState extends State<Home> {
   refreshDirectory() async {
     await EasyLoading.show(status: 'loading...');
     Archive archive = Archive();
-    list = await archive.getDirectories(await Archive.root());
+
+    String blackList = "";
+    for(var i = 0; i < listBlackList.length; i++) {
+      blackList += "'${listBlackList[i]}'";
+    }
+    print(blackList);
+
+    list = await archive.getDirectories(await Archive.root(), blackList);
     list.sort((a, b) => a["title"].compareTo(b["title"]));
     await Storage.setJsonList("Directories", list); 
     setState(() {});
@@ -195,14 +205,14 @@ class _HomeState extends State<Home> {
               IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
+                    // print("'${list[i]["path"]}'");
                     if(myBlackList.contains("'${list[i]["path"]}'")) {
+                      listBlackList.add("${list[i]["path"]}");
                       list.removeAt(i);
                     }
                   }
                   await Storage.setJsonList("Directories", list);
-
-                  myBlackList += await Storage.getString("blackList");
-                  await Storage.setString("blackList", myBlackList);
+                  await Storage.setJsonList("BlackList", listBlackList);
                   myBlackList = "";
                   setState(() {});
                 },
@@ -246,10 +256,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Drawer drawer() { // 還沒寫完，2024-05-16
-    List<Widget> children = [];
-    final titles = ['Java', 'Python', 'JavaScript'];
-
+  Drawer drawer() {
     Widget header = Container(
       height: 60,
       width: double.infinity,
@@ -266,7 +273,7 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2024-05-22",
+      child: const Text("JimC, 2024-05-23",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white
@@ -275,11 +282,17 @@ class _HomeState extends State<Home> {
       )
     );
 
+    List<Widget> children = [];
+    final titles = ['黑名單'];
     for(var i = 0; i < titles.length; i++) {
       children.add(ListTile(
           title: Text(titles[i]),
           onTap: () {
+
             Navigator.pop(context);
+            if(titles[i] == '黑名單') {
+              showBlackList();
+            }
           }
       ));
     }
@@ -295,6 +308,54 @@ class _HomeState extends State<Home> {
           footer
         ]
       )
+    );
+  }
+
+  showBlackList() {
+    listBlackList.sort();
+    Widget listview =  Container(
+      height: 300.0, // Change as per your requirement
+      width: 310.0, // Change as per your requirement
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: listBlackList.length,
+        itemBuilder: (BuildContext context, int index) {
+          return ListTile(
+            title: Text(listBlackList[index]),
+            onTap: () async {
+              List arr = listBlackList[index].split("/");
+              int count = 0;
+
+              Archive archive = Archive();
+              count = (await archive.getFiles(listBlackList[index])).length;
+
+              list.add({"title": arr[arr.length - 1], "path": listBlackList[index], "count": count});
+              list.sort((a, b) => a["title"].compareTo(b["title"]));
+              await Storage.setJsonList("Directories", list);
+
+              listBlackList.removeAt(index);
+              await Storage.setJsonList("BlackList", listBlackList);              
+              setState(() { });
+              Navigator.of(context).pop();
+            },
+            // selected: selectedFriends.contains(string),
+            // style:  ListTileTheme(selectedColor: Colors.white,),
+          );
+        },
+      ),
+    );
+    
+    // ignore: use_build_context_synchronously
+    showDialog(
+      context: context,
+      // barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('清單'),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
+          content: listview,
+        );
+      }
     );
   }
 

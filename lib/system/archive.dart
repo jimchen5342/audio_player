@@ -17,13 +17,7 @@ class Archive {
     return "${pathes[0]}";
   }
 
-  Future<List<dynamic>> getDirectories(String directoryPath) async {
-    String blackList = "";
-    List<dynamic> arr = await Storage.getJsonList("BlackList");
-    for(var i = 0; i < arr.length; i++) {
-      blackList += "'${arr[i]}'";
-    }
-
+  Future<List<dynamic>> getDirectories(String directoryPath, String blackList) async {
     // blackList = "'MyTube'";
     String root = await Archive.root();
     List<dynamic> list = [];
@@ -34,7 +28,7 @@ class Archive {
       int count = 0;
       await for (final FileSystemEntity f1 in dirList1) {
         if (f1 is Directory) {
-          var list2 = await getDirectories(f1.path);
+          var list2 = await getDirectories(f1.path, blackList);
           if(list2.isNotEmpty) {
             list = list + list2;
           }
