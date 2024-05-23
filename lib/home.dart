@@ -288,10 +288,13 @@ class _HomeState extends State<Home> {
       children.add(ListTile(
           title: Text(titles[i]),
           onTap: () {
-
             Navigator.pop(context);
             if(titles[i] == '黑名單') {
-              showBlackList();
+              if(activeBar == 0) {
+                showBlackList();
+              } else {
+                alert("請切回檔案頁面");
+              }
             }
           }
       ));
