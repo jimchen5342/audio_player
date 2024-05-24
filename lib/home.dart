@@ -326,23 +326,12 @@ class _HomeState extends State<Home> {
           return ListTile(
             title: Text(listBlackList[index]),
             onTap: () async {
-              List arr = listBlackList[index].split("/");
-              int count = 0;
-
-              Archive archive = Archive();
-              count = (await archive.getFiles(listBlackList[index])).length;
-
-              list.add({"title": arr[arr.length - 1], "path": listBlackList[index], "count": count});
-              list.sort((a, b) => a["title"].compareTo(b["title"]));
-              await Storage.setJsonList("Directories", list);
-
-              listBlackList.removeAt(index);
-              await Storage.setJsonList("BlackList", listBlackList);              
-              setState(() { });
               Navigator.of(context).pop();
-            },
-            // selected: selectedFriends.contains(string),
-            // style:  ListTileTheme(selectedColor: Colors.white,),
+              String result = await alert("確定刪除黑名單", btn: AlertButtonStyle.yesNo);
+              if(result == "yes") {
+                delBlackList(index);
+              }
+            }
           );
         },
       ),
@@ -354,12 +343,28 @@ class _HomeState extends State<Home> {
       // barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('清單'),
+          title: const Text('黑名單'),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
           content: listview,
         );
       }
     );
+  }
+
+  delBlackList(index) async {
+    List arr = listBlackList[index].split("/");
+    int count = 0;
+
+    Archive archive = Archive();
+    count = (await archive.getFiles(listBlackList[index])).length;
+
+    list.add({"title": arr[arr.length - 1], "path": listBlackList[index], "count": count});
+    list.sort((a, b) => a["title"].compareTo(b["title"]));
+    await Storage.setJsonList("Directories", list);
+
+    listBlackList.removeAt(index);
+    await Storage.setJsonList("BlackList", listBlackList);              
+    setState(() { });
   }
 
   Widget body() {
@@ -400,7 +405,7 @@ class _HomeState extends State<Home> {
                       } else {
                         await Storage.setString("activeCollect", activeDirectory);
                       }
-                      if(dirty is bool && dirty ) {
+                      if(activeBar == 1 && dirty is bool && dirty ) {
                         await initialCollection();
                       } else {
                         setState(() {});

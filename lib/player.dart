@@ -571,6 +571,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               _button(Icons.bookmark, addBookMark, visible: true),
             if(mode != "Directory" && marked.isNotEmpty)
               _button(Icons.content_cut, cut, visible: true),
+            if(mode == "Directory" && marked.isNotEmpty && title == "MyTube2")
+              _button(Icons.delete, delete, visible: true),
             _button(Icons.undo, undo, visible: true),
           ],
         ),
@@ -613,7 +615,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       ),
     );
     
-    
     // ignore: use_build_context_synchronously
     showDialog(
       context: context,
@@ -633,8 +634,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     int index = list.indexWhere((el) => el["title"] == title);
     if(index != -1) {
       List<String> books = marked.split("''");
+      List<int> arr = [];
       for(var i = 0; i < books.length; i++) {
-        int j = int.parse(books[i].replaceAll("'", ""));
+        arr.add( int.parse(books[i].replaceAll("'", "")));
+      }
+      arr.sort();
+      for(var i = arr.length - 1; i >= 0; i--) {
+        int j = arr[i];
 
         int index2 = list[index]["datas"].indexWhere((el) => el == songs[j].id);
         if(index2 != -1) {
@@ -650,6 +656,33 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     bEdit = false;
     setState(() {});
   }
+
+  delete() async {
+    _audioHandler!.stop();
+    List<String> books = marked.split("''");
+    List<int> arr = [];
+    for(var i = 0; i < books.length; i++) {
+      arr.add( int.parse(books[i].replaceAll("'", "")));
+    }
+    arr.sort();
+    for(var i = arr.length - 1; i >= 0; i--) {
+      int j = arr[i];
+      var f = File(songs[j].id);
+      if (f.existsSync()) {
+        f.deleteSync();
+      }
+      // print(songs[j].id);
+      songs.removeAt(j);
+      dirty = true;
+    }
+    
+    marked = "";
+    bEdit = false;
+    initialDirectory();
+    // _audioHandler!.init();
+    setState(() {});
+  }
+
 
   undo() {
     bEdit = false;
