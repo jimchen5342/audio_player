@@ -11,7 +11,7 @@ import 'package:rxdart/rxdart.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
-int spendSeconds = 0, sleepTime = 0;
+int spendSeconds = 0, sleepTime = 60;
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -50,7 +50,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     spendSeconds = 0;
-    sleepTime = 0;
+    sleepTime = 60;
     
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
@@ -81,6 +81,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       setState(() { });
     });
    
+  }
+  String trimFullName(String fullName) {
+    var arr = fullName.split("/");
+    var ss = arr[arr.length -1].replaceAll("yt-", "").replaceAll("T", " ");
+    String title = "${ss.substring(0, 2)}-${ss.substring(2, 4)}-${ss.substring(4, 6)}";
+    title +=  " ${ss.substring(7, 9)}:${ss.substring(9, 11)}";
+    
+    return title;
   }
 
   String trim(String title) {
@@ -210,11 +218,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if(AppLifecycleState.resumed == state) {
-    }
-    else if(AppLifecycleState.paused == state) {
-      debugPrint("didChangeAppLifecycleState: $state");
-    }
+    // if(AppLifecycleState.resumed == state) {
+    // }
+    // else if(AppLifecycleState.paused == state) {
+    //   debugPrint("didChangeAppLifecycleState: $state");
+    // }
   }
 
   backTo() {
@@ -383,6 +391,28 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             style: const TextStyle(color:Colors.grey, fontSize: 12)
           ) 
     );
+    Widget? widget2B = title == "MyTube2" || (song.artist != null && song.artist!.isNotEmpty) ? 
+      Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if(song.artist != null && song.artist!.isNotEmpty)
+            Text("  ${song.artist!}",
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(color:Colors.white, fontSize: 12)
+            ),
+          Expanded(flex: 1, child: Container(width: 5,)), 
+          if(title == "MyTube2")
+            Text(trimFullName("${song.id}"),
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(color:Colors.white, fontSize: 12)
+            ),
+        ]
+      ) : null;
     Widget widget2 = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,13 +423,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           textDirection: TextDirection.ltr,
           style: const TextStyle(color:Colors.white, fontSize: 18)
         ),
-        if(song.artist != null && song.artist!.isNotEmpty)
-          Text("  ${song.artist!}",
-            softWrap: true,
-            overflow: TextOverflow.ellipsis,
-            textDirection: TextDirection.ltr,
-            style: const TextStyle(color:Colors.white, fontSize: 12)
-          ),
+        if(widget2B != null)
+          Container(child: widget2B)
       ]
     );
 
@@ -681,7 +706,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     // _audioHandler!.init();
     setState(() {});
   }
-
 
   undo() {
     bEdit = false;
