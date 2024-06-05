@@ -519,9 +519,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
         if(currentPosition > xx) currentPosition = 0;
 
-        var str = (xx - currentPosition) == 0 ? "" 
-          : "-${Duration(seconds: (xx - currentPosition).toInt()).format()}";
-
+        var str = "-${Duration(seconds: (xx - currentPosition).toInt()).format()}"; // (xx - currentPosition) == 0 ? ""  : 
+        
         return  Row(
           children: [
             Expanded(flex: 1, 
@@ -537,7 +536,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                 },
               )
             ),
-            if(currentPosition > 0)
+            // if(currentPosition > 0)
               Text(str,
                 style: const TextStyle(
                   color: Colors.white,
@@ -691,7 +690,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   void _animateToIndex(int index) {
-    if(_controller == null || _controller.positions.isEmpty) return;
+    if(_controller == null || _controller.positions.isEmpty) {
+      return;
+    }
     
     final visibleRange = _controller.position.viewportDimension;
     double pos = -1, newPos = index * _height;
@@ -715,10 +716,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final currentSong = BehaviorSubject<MediaItem>();
   final currentPosition = BehaviorSubject<Duration>();
   int _oldSeconds = 0;
+  bool bInitial = false;
 
   void init() async {
     currentPosition.add(Duration.zero);
-    if(queue.value.isEmpty) {
+    if(bInitial == false) {
       _player.playbackEventStream.listen(_broadcastState);
 
       AudioService.position.listen((Duration position) {
@@ -726,19 +728,34 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
 
-          if(sleepTime != 0) {
-            if(spendSeconds >= sleepTime * 60) {
+          if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
               pause();
               spendSeconds = 0;
-            } else if(position.inSeconds > 0) {
+          } else if(sleepTime == 0 && spendSeconds >= 60 * 60){
+            pause();
+            spendSeconds = 0;
+          }
+          if(position.inSeconds > 0) {
               spendSeconds++;
-            }
-          } 
+          }
         }
       });
+
+      // _player.playerStateStream.listen((state) {
+        // print("state: ${state.playing},  processingState: ${state.processingState}");
+        // if (state.playing) ... else ...
+        // switch (state.processingState) {
+        //   case ProcessingState.idle: ...
+        //   case ProcessingState.loading: ...
+        //   case ProcessingState.buffering: ...
+        //   case ProcessingState.ready: ...
+        //   case ProcessingState.completed: ...
+        // }
+      // });
       _player.processingStateStream.listen((state) {
         if (state == ProcessingState.completed) skipToNext();
       });
+      bInitial = true;
     } else {
       stop();
       queue.value.clear();
@@ -777,6 +794,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> stop() async {
     await _player.stop();
+    await _player.seek(Duration.zero);
     await playbackState.firstWhere(
         (state) => state.processingState == AudioProcessingState.idle);
   }
