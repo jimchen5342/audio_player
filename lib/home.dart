@@ -23,22 +23,8 @@ class _HomeState extends State<Home> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await invokePermission();
-      
-      //2024-06-01 刪除 -----------------------------
-      String blacklist = await Storage.getString("blackList");
-      if(blacklist.isNotEmpty) {
-        List<String> arr = blacklist.split("''");
-        arr[0] = arr[0].substring(1);
-        String s2 = arr[arr.length - 1];
-        arr[arr.length - 1] = s2.substring(0, s2.length - 1);
-        await Storage.remove("blackList");
-        await Storage.setJsonList("BlackList", arr); 
-      }
-      //2024-06-01 刪除 -----------------------------
-
 
       listBlackList = await Storage.getJsonList("BlackList");
-      
 
       activeBar = await Storage.getInt("activeBar");
       switchBar();
@@ -273,7 +259,7 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2024-05-23",
+      child: const Text("JimC, 2024-06-06",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white

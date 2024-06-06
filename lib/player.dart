@@ -28,12 +28,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   final ScrollController _controller = ScrollController();
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
-    Widget btn = IconButton(
-      color: Colors.white,
-      icon: Icon(iconData, color: visible ? Colors.white : Colors.grey, size: visible ? 30 : 20),
-      onPressed: visible ? onPressed : null,
-    );
-
     return Container(
       width: 60,
       height: 60,
@@ -41,7 +35,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       //   border: Border.all(color: Colors.blueAccent),
       //   borderRadius: BorderRadius.circular(10),
       // ),
-      child: btn // visible ? btn : null
+      child:  IconButton(
+        color: Colors.white,
+        icon: Icon(iconData, color: visible ? Colors.white : Colors.grey, size: visible ? 30 : 20),
+        onPressed: visible ? onPressed : null,
+      ) // visible ? btn : null
     );
   }
 
@@ -325,20 +323,18 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget _buildPopMenuSleep() {
-    var arr = [5, 10, 15, 20, 25, 30, 45, 60];
+    var arr = [3, 5, 10, 15, 20, 30, 45, 60, 90, 120];
 
     return PopupMenuButton<int>(
       icon: const Icon(Icons.alarm, color: Colors.white),
       offset: const Offset(0, 40),
       itemBuilder: (context) {
-        int sub = (sleepTime * 60) - spendSeconds;
-        String total = sub == 0 ? ""  : " (${Duration(seconds: sub).format()})";
         return [
           for (var i = 0; i < arr.length; i++)
             CheckedPopupMenuItem<int>(
               value: arr[i],
               checked: sleepTime == arr[i],
-              child: Text('${arr[i]} 分鐘${sleepTime == arr[i] ? total : ""}', 
+              child: Text('${arr[i]} 分鐘', 
                 style: TextStyle(
                   fontSize: 18,
                   color: defaultSleepTime == arr[i] ? Colors.red : Colors.black
@@ -354,6 +350,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         if(sleepTime != 0) {
           Storage.setInt("sleepTime", sleepTime);
         }
+        setState(() {});
       }
     );
   }
@@ -405,7 +402,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
             ),
           Expanded(flex: 1, child: Container(width: 5,)), 
           if(title == "MyTube2")
-            Text(trimFullName("${song.id}"),
+            Text(trimFullName(song.id),
               softWrap: true,
               overflow: TextOverflow.ellipsis,
               textDirection: TextDirection.ltr,
@@ -522,16 +519,41 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious, visible: queueIndex > 0),
             if (playing)
               _button(Icons.pause, _audioHandler!.pause)
             else
-              _button(Icons.play_arrow, _audioHandler!.play),
+              _button(Icons.play_arrow, () {
+                _audioHandler!.play();
+                setState(() { });
+              }),
             _button(Icons.stop, _audioHandler!.stop),
             _button(Icons.skip_next, _audioHandler!.skipToNext, visible: queueIndex < songs.length -1),
+            Expanded(flex: 1, child: Container()),
+            // if(spendSeconds > 1)
+              _buildSpendTime(),
+            const SizedBox(width: 5,)
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSpendTime() {
+     return StreamBuilder<Duration>(
+      stream: _audioHandler!.currentPosition,
+      builder: (context, snapshot) {
+        int sub = (sleepTime * 60) - (spendSeconds <= 1 ? 0 : spendSeconds);
+        String total =  "-${Duration(seconds: sub).format()}";
+
+        return Text(total,
+          style: const TextStyle(
+            color: Colors.orange,
+            fontSize: 20,
+          )
+        );
+      }
     );
   }
 
@@ -568,7 +590,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
                   fontSize: 20,
                 )
               ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 5),
             // Text(spendSeconds.toString(),
             //   style: const TextStyle(
             //     color: Colors.red,
@@ -753,14 +775,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
           _oldSeconds = position.inSeconds;
 
           if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
-              pause();
-              spendSeconds = 0;
-          } else if(sleepTime == 0 && spendSeconds >= 60 * 60){
             pause();
             spendSeconds = 0;
-          }
-          if(position.inSeconds > 0) {
-              spendSeconds++;
+          } else if(position.inSeconds > 0 && _player.playing) {
+            spendSeconds++;
           }
         }
       });
