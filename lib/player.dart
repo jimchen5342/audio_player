@@ -29,8 +29,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
     return Container(
-      width: 60,
-      height: 60,
+      width: 50,
+      height: 50,
       // decoration: BoxDecoration(
       //   border: Border.all(color: Colors.blueAccent),
       //   borderRadius: BorderRadius.circular(10),
@@ -530,10 +530,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               }),
             _button(Icons.stop, _audioHandler!.stop),
             _button(Icons.skip_next, _audioHandler!.skipToNext, visible: queueIndex < songs.length -1),
-            Expanded(flex: 1, child: Container()),
-            // if(spendSeconds > 1)
-              _buildSpendTime(),
-            const SizedBox(width: 5,)
+            Expanded(flex: 1, 
+              child: Row(children: [
+                Expanded(flex: 1, child: Container()),
+               _buildSpendTime(),
+               const SizedBox(width: 5,)
+              ],
+            )),
           ],
         );
       },
@@ -544,13 +547,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
      return StreamBuilder<Duration>(
       stream: _audioHandler!.currentPosition,
       builder: (context, snapshot) {
-        int sub = (sleepTime * 60) - (spendSeconds <= 1 ? 0 : spendSeconds);
+        int sub = (sleepTime * 60) - spendSeconds;
         String total =  "-${Duration(seconds: sub).format()}";
 
         return Text(total,
           style: const TextStyle(
             color: Colors.orange,
-            fontSize: 20,
+            fontSize: 18,
           )
         );
       }
@@ -587,16 +590,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
               Text(str,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 18,
                 )
               ),
             const SizedBox(width: 5),
-            // Text(spendSeconds.toString(),
-            //   style: const TextStyle(
-            //     color: Colors.red,
-            //     fontSize: 20,
-            //   )
-            // ),
           ]
         );
       }
@@ -774,11 +771,14 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
 
+          // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
           if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
             pause();
             spendSeconds = 0;
+            // print("positition: pause, spendSeconds: $spendSeconds, $timeline");
           } else if(position.inSeconds > 0 && _player.playing) {
             spendSeconds++;
+            // print("positition: playing: ${_player.playing}, spendSeconds: $spendSeconds, $timeline");
           }
         }
       });
