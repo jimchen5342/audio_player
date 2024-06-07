@@ -11,7 +11,7 @@ import 'package:rxdart/rxdart.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
-int spendSeconds = 0, sleepTime = 60;
+int spendSeconds = 0, sleepTime = 30;
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -48,7 +48,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     spendSeconds = 0;
-    sleepTime = 60;
+    sleepTime = 30;
     
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
@@ -89,7 +89,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     return title;
   }
 
-  String trim(String title) {
+  String trimExtName(String title) {
     List list = ['3gpp', 'webm', 'mp4', 'mp3'];
     for(var i = 0; i < list.length; i++) {
       title = title.replaceAll(".${list[i]}", "");
@@ -121,7 +121,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       }
 
       var duration = await player.setUrl(fullName);
-      String songName = trim(list[i]);
+      String songName = trimExtName(list[i]);
       String author = "";
       if(title == "MyTube2") {
         for(var x = 0; x < playlist.length; x++) {
@@ -164,7 +164,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       var duration = await player.setUrl(datas[i]);
       var item = MediaItem(
         id: datas[i],
-        title: trim(paths[paths.length - 1]),
+        title: trimExtName(paths[paths.length - 1]),
         album: title,
         artist: paths[paths.length - 2],
         duration: duration,
@@ -344,12 +344,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         ];
       },
       onSelected: (int value) {
-        sleepTime = sleepTime == value ? 0 : value;
+        sleepTime = value;
         defaultSleepTime = -1;
         spendSeconds = 0;
-        if(sleepTime != 0) {
-          Storage.setInt("sleepTime", sleepTime);
-        }
+        Storage.setInt("sleepTime", sleepTime);
         setState(() {});
       }
     );

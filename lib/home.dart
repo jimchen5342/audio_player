@@ -259,7 +259,7 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2024-06-06",
+      child: const Text("JimC, 2024-06-07",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white
