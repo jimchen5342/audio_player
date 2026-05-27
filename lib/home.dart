@@ -208,7 +208,7 @@ class _HomeState extends State<Home> {
         ),
         body: PopScope(
           canPop: false,
-          onPopInvoked: (bool didPop) {
+          onPopInvokedWithResult: (bool didPop, dynamic result) {
             if (didPop) {
               return;
             }

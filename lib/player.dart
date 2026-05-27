@@ -310,7 +310,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         ),
         body: PopScope(
             canPop: false,
-            onPopInvoked: (bool didPop) {
+            onPopInvokedWithResult: (bool didPop, dynamic result) {
               if (didPop) {
                 return;
               }
@@ -731,7 +731,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   void _animateToIndex(int index) {
-    if(_controller == null || _controller.positions.isEmpty) {
+    if(_controller.positions.isEmpty) {
       return;
     }
     

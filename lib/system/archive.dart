@@ -1,6 +1,5 @@
 import 'package:external_path/external_path.dart';
 import 'dart:io';
-import 'package:audio_player/system/storage.dart';
 /*
 await ExternalPath.getExternalStorageDirectories();
 
@@ -13,8 +12,11 @@ ExternalPath.DIRECTORY_DOCUMENTS
 
 class Archive {
   static Future<String> root() async {
-    var pathes = await ExternalPath.getExternalStorageDirectories();
-    return "${pathes[0]}";
+    List<String>? pathes = await ExternalPath.getExternalStorageDirectories();
+    if (pathes != null && pathes.isNotEmpty) {
+      return pathes[0];
+    }
+    return "";
   }
 
   Future<List<dynamic>> getDirectories(String directoryPath, String blackList) async {

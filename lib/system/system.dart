@@ -1,9 +1,6 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-
 import 'package:flutter_platform_alert/flutter_platform_alert.dart';
 export 'package:flutter_platform_alert/flutter_platform_alert.dart';
-
+// ignore: unused_import
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 export 'package:flutter_easyloading/flutter_easyloading.dart';
 

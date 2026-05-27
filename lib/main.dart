@@ -22,7 +22,7 @@ void configLoading() {
     // ..textColor = Colors.yellow
     // dismissOnTap
     ..maskType = EasyLoadingMaskType.custom
-    ..maskColor = Colors.black12.withOpacity(0.3);
+    ..maskColor = Colors.black12.withValues(alpha: 0.3);
 }
 
 class MyApp extends StatelessWidget {

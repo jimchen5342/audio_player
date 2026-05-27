@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.flutter.audio_player"
-    compileSdkVersion 34
+    compileSdkVersion 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -38,9 +38,9 @@ android {
         // targetSdkVersion flutter.targetSdkVersion
         // versionCode flutterVersionCode.toInteger()
         // versionName flutterVersionName
-
+ 
         minSdkVersion 23
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode 1
         versionName ""
         setProperty("archivesBaseName", "AudioPlayer")
