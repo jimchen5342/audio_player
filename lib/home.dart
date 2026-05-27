@@ -13,7 +13,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [], listBlackList = [];
-  String activeDirectory = "", myBlackList = "";
+  String activeDirectory = "";
+  List<String> blackList1 = [], blackList2 = [];
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
   int activeBar = 0;
@@ -125,6 +126,7 @@ class _HomeState extends State<Home> {
     if(list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
       list.add({"title": "VOA", "datas": []});
+      list.add({"title": "英語", "datas": []});
       list.add({"title": "日語", "datas": []});
       await Storage.setJsonList("Collects", list);
     } else {
@@ -174,33 +176,92 @@ class _HomeState extends State<Home> {
             style: TextStyle( color:Colors.white,)
           ),
           actions: [
-            if(activeBar == 0 && myBlackList.isEmpty) // 更新
+            if(activeBar == 0 && blackList1.isEmpty) // 更新
               IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
                 onPressed: () async {
                   await refreshDirectory();
                 },
               ),
-            if(activeBar == 0 && myBlackList.isNotEmpty) // 取消刪除
+            if(activeBar == 0 && blackList1.isNotEmpty) // 取消刪除
               IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
                   onPressed: () async {
-                    myBlackList = "";
+                    blackList1 = [];
                     setState(() {});
                   }
               ),
-            if(activeBar == 0 && myBlackList.isNotEmpty) // 確定刪除
+            if(activeBar == 0 && blackList1.isNotEmpty) // 確定刪除
               IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
                 onPressed: () async {
                   for(var i = list.length - 1; i >= 0; i--) {
                     // print("'${list[i]["path"]}'");
-                    if(myBlackList.contains("'${list[i]["path"]}'")) {
+                    if(blackList1.contains("'${list[i]["path"]}'")) {
                       listBlackList.add("${list[i]["path"]}");
                       list.removeAt(i);
                     }
                   }
                   await Storage.setJsonList("Directories", list);
                   await Storage.setJsonList("BlackList", listBlackList);
-                  myBlackList = "";
+                  blackList1 = [];
                   setState(() {});
+                },
+              ),
+            if(activeBar == 1 && blackList2.isEmpty) // 清單頁面, 新增清單
+              IconButton( icon: const Icon( Icons.add, color: Colors.white),
+                  onPressed: () async {
+                    TextEditingController textFieldController = TextEditingController();
+                    String? newListName = await showDialog<String>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('新增清單'),
+                          content: TextField(
+                            controller: textFieldController,
+                            decoration: const InputDecoration(hintText: "請輸入清單名稱"),
+                            autofocus: true,
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text('取消'),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            TextButton(
+                              child: const Text('確定'),
+                              onPressed: () => Navigator.pop(context, textFieldController.text),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (newListName != null && newListName.trim().isNotEmpty) {
+                      list.add({"title": newListName.trim(), "datas": []});
+                      await Storage.setJsonList("Collects", list);
+                      setState(() {});
+                    }
+                  }
+              ),
+            if(activeBar == 1 && blackList2.isNotEmpty) // 取消刪除
+              IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
+                  onPressed: () async {
+                    blackList2 = [];
+                    setState(() {});
+                  }
+              ),
+            if(activeBar == 1 && blackList2.isNotEmpty) // 確定刪除
+              IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
+                onPressed: () async {
+                  for(var i = list.length - 1; i >= 0; i--) {
+                    if(blackList2.contains("'${list[i]["title"]}'")) {
+                      list.removeAt(i);
+                    }
+                  }
+                  await Storage.setJsonList("Collects", list);
+                  blackList2 = [];
+                  if(list.isEmpty) {
+                    await initialCollection();
+                  } else {
+                    setState(() {});
+                  }
                 },
               ),
           ],
@@ -232,6 +293,8 @@ class _HomeState extends State<Home> {
           selectedItemColor: Colors.amber[800],
           onTap: (int index) {
             activeBar = index;
+            blackList1 = [];
+            blackList2 = [];
             Storage.setInt("activeBar", activeBar);
             setState(() {
               switchBar();
@@ -259,7 +322,7 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2024-06-07",
+      child: const Text("JimC, 2026-05-27 11:00",
         textAlign: TextAlign.center,
         style: TextStyle(
           // color: Colors.white
@@ -360,6 +423,7 @@ class _HomeState extends State<Home> {
       itemExtent: _height, //强制高度
       itemBuilder: (BuildContext context, int index) {
         String path = "'${list[index]["path"]}'";
+        String title = "'${list[index]["title"]}'";
         return Container(
           decoration: BoxDecoration(
             color: (activeBar == 0 && activeDirectory == list[index]["path"]) 
@@ -432,30 +496,57 @@ class _HomeState extends State<Home> {
                   )
                 )
               ),
-              if(activeBar == 0 && myBlackList.isEmpty)
+              if(activeBar == 0 && blackList1.isEmpty)
                 IconButton(
                   iconSize: 20,
                   icon: const Icon(Icons.delete, color: Colors.white),
                   onPressed: () {
-                    myBlackList = path;
+                    blackList1.add(path);
                     setState(() { });
                   },
                 ),
-              if(myBlackList.isNotEmpty && myBlackList.contains(path))
+              if(activeBar == 1 && blackList2.isEmpty)
+                IconButton(
+                  iconSize: 20,
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  onPressed: () {
+                    blackList2.add(title);
+                    setState(() { });
+                  },
+                ),
+              if(activeBar == 0 && blackList1.isNotEmpty && blackList1.contains(path))
                 IconButton(
                   iconSize: 20,
                   icon: const Icon(Icons.check_box_rounded, color: Colors.white),
                   onPressed: () {
-                    myBlackList = myBlackList.replaceAll(path, "");
+                    blackList1.remove(path);
                     setState(() { });
                   },
                 ),
-              if(myBlackList.isNotEmpty && ! myBlackList.contains(path))
+              if(activeBar == 0 && blackList1.isNotEmpty && ! blackList1.contains(path))
                 IconButton(
                   iconSize: 20,
                   icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
                   onPressed: () {
-                    myBlackList += path;
+                    blackList1.add(path);
+                    setState(() { });
+                  },
+                ),
+              if(activeBar == 1 && blackList2.isNotEmpty && blackList2.contains(title))
+                IconButton(
+                  iconSize: 20,
+                  icon: const Icon(Icons.check_box_rounded, color: Colors.white),
+                  onPressed: () {
+                    blackList2.remove(title);
+                    setState(() { });
+                  },
+                ),
+              if(activeBar == 1 && blackList2.isNotEmpty && ! blackList2.contains(title))
+                IconButton(
+                  iconSize: 20,
+                  icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
+                  onPressed: () {
+                    blackList2.add(title);
                     setState(() { });
                   },
                 ),
