@@ -188,7 +188,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                 'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
             androidNotificationChannelName: '音樂播放器',
             androidNotificationOngoing: true,
-            androidNotificationIcon: "mipmap/ic_launcher"),
+            androidNotificationIcon: "drawable/ic_stat_music_note"),
       );
 
       _audioHandler!.init();
