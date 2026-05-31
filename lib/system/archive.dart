@@ -30,9 +30,11 @@ class Archive {
       int count = 0;
       await for (final FileSystemEntity f1 in dirList1) {
         if (f1 is Directory) {
-          var list2 = await getDirectories(f1.path, blackList);
-          if(list2.isNotEmpty) {
-            list = list + list2;
+          if(!isIgnoreDirectory(f1.path)) {
+            var list2 = await getDirectories(f1.path, blackList);
+            if(list2.isNotEmpty) {
+              list = list + list2;
+            }
           }
         } else if(f1 is File && isMusic(f1)) {
           count++;          
@@ -47,6 +49,13 @@ class Archive {
       }
     }
     return list;
+  }
+
+  bool isIgnoreDirectory(String path) {
+    return path.contains("DCIM")
+      || path.contains("LINE") 
+      || path.contains("來電")
+      || path.contains("Ringtone");
   }
 
   Future<List<String>> getFiles(String directoryPath) async {

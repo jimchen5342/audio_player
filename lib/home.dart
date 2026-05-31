@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:audio_player/system/module.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -13,6 +14,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<dynamic> list = [], listBlackList = [];
+  String appVersion = "";
   String activeDirectory = "";
   List<String> blackList1 = [], blackList2 = [];
   final ScrollController _controller = ScrollController();
@@ -26,6 +28,11 @@ class _HomeState extends State<Home> {
       await invokePermission();
 
       listBlackList = await Storage.getJsonList("BlackList");
+
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        appVersion = packageInfo.version;
+      });
 
       activeBar = await Storage.getInt("activeBar");
       switchBar();
@@ -77,7 +84,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  initialDirectory() async {
+  initialDirectory() async { // 初始資料夾列表 
     activeDirectory = await Storage.getString("activeDirectory");
     list = await Storage.getJsonList("Directories");
     int activeIndex = -1;
@@ -166,12 +173,12 @@ class _HomeState extends State<Home> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          leading: Builder(
+          leading: activeBar == 0 ? Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu, color: Colors.white),
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
-          ),
+          ) : const SizedBox.shrink(),
           title: const Text('音樂播放器',
             style: TextStyle( color:Colors.white,)
           ),
@@ -282,7 +289,7 @@ class _HomeState extends State<Home> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.folder),
-              label: "檔案"
+              label: "資料夾"
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.featured_play_list),
@@ -322,11 +329,11 @@ class _HomeState extends State<Home> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
       ),
-      child: const Text("JimC, 2026-05-27 21:00",
+      child: Text("JimC, Ver: $appVersion",
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           // color: Colors.white
-          fontSize: 20
+          fontSize: 16
         )
       )
     );
@@ -341,8 +348,8 @@ class _HomeState extends State<Home> {
             if(titles[i] == '黑名單') {
               if(activeBar == 0) {
                 showBlackList();
-              } else {
-                alert("請切回檔案頁面");
+              // } else {
+              //   alert("請切回檔案頁面");
               }
             }
           }
@@ -438,9 +445,11 @@ class _HomeState extends State<Home> {
                 child: Material(
                   color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
-                    // onLongPress: () {
-                    //   alert("longpress");
-                    // },
+                    onLongPress: () {
+                      if(activeBar == 0) {
+                        alert(list[index]["path"]);
+                      }
+                    },
                     onTap: () async {
                       if(activeBar == 1 && list[index]["datas"].length == 0) {
                         alert("沒有檔案");
