@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -170,9 +171,17 @@ class _HomeState extends State<Home> {
   
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light, // 強制 Android 圖示為白色
+      ),
+      child: Container(
+        color: Colors.black,
+        child: SafeArea(
+          top: true,
+          child: Scaffold(
+          appBar: AppBar(
           leading: activeBar == 0 ? Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu, color: Colors.white),
@@ -308,7 +317,9 @@ class _HomeState extends State<Home> {
             });
           },
        ),
-      )
+        ),
+      ),
+    )
     );
   }
 

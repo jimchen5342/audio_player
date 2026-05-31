@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:audio_player/home.dart';
 import 'package:audio_player/player.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.black, // Android 狀態列背景
+    statusBarIconBrightness: Brightness.light, // Android 圖示顏色
+    statusBarBrightness: Brightness.dark, // iOS 狀態列文字顏色
+  ));
   runApp(const MyApp());
   configLoading();
 }
@@ -30,19 +37,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        initialRoute: '/home',
-        routes: <String, WidgetBuilder>{
-          '/home': (BuildContext context) => const Home(),
-          '/player': (BuildContext context) => Player(),
-        },
-        builder: EasyLoading.init(),
-      )
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+          // primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/home',
+      routes: <String, WidgetBuilder>{
+        '/home': (BuildContext context) => const Home(),
+        '/player': (BuildContext context) => Player(),
+      },
+      builder: EasyLoading.init(),
     );
   }
 }

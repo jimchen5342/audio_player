@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:audio_player/system/module.dart';
 
 import 'package:audio_service/audio_service.dart';
@@ -20,14 +20,15 @@ class Player extends StatefulWidget {
   _PlayerState createState() => _PlayerState();
 }
 
-class _PlayerState extends State<Player> with WidgetsBindingObserver{
+class _PlayerState extends State<Player> with WidgetsBindingObserver {
   String title = "", path = "", mode = "Directory", marked = "";
   bool isReady = false, bEdit = false, dirty = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
 
-  Widget _button(IconData iconData, VoidCallback onPressed, {bool visible = true}){
+  Widget _button(IconData iconData, VoidCallback onPressed,
+      {bool visible = true}) {
     return Container(
       width: 50,
       height: 50,
@@ -35,9 +36,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       //   border: Border.all(color: Colors.blueAccent),
       //   borderRadius: BorderRadius.circular(10),
       // ),
-      child:  IconButton(
+      child: IconButton(
         color: Colors.white,
-        icon: Icon(iconData, color: visible ? Colors.white : Colors.grey, size: visible ? 30 : 20),
+        icon: Icon(iconData,
+          color: visible ? Colors.white : Colors.grey,
+          size: visible ? 30 : 20),
         onPressed: visible ? onPressed : null,
       ) // visible ? btn : null
     );
@@ -49,13 +52,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     WidgetsBinding.instance.addObserver(this);
     spendSeconds = 0;
     sleepTime = 30;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String; // 目錄名稱
       setState(() {});
 
-      if(arg["path"] is String) {
+      if (arg["path"] is String) {
         mode = "Directory";
         path = arg["path"] as String;
 
@@ -63,11 +66,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         defaultSleepTime = await Storage.getInt("sleepTime");
         loop = await Storage.getInt("loop");
 
-        if(songs.isEmpty || active != path || title == "MyTube2") {
+        if (songs.isEmpty || active != path || title == "MyTube2") {
           songs = [];
           await initialDirectory();
           await Storage.setString("playDirectory", path);
-        }        
+        }
       } else {
         mode = "Collect";
         songs = [];
@@ -76,22 +79,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         await Storage.setString("playDirectory", "");
       }
       isReady = true;
-      setState(() { });
+      setState(() {});
     });
-   
   }
+
   String trimFullName(String fullName) {
     var arr = fullName.split("/");
-    var ss = arr[arr.length -1].replaceAll("yt-", "").replaceAll("T", " ");
-    String title = "${ss.substring(0, 2)}-${ss.substring(2, 4)}-${ss.substring(4, 6)}";
-    title +=  " ${ss.substring(7, 9)}:${ss.substring(9, 11)}";
-    
+    var ss = arr[arr.length - 1].replaceAll("yt-", "").replaceAll("T", " ");
+    String title =
+        "${ss.substring(0, 2)}-${ss.substring(2, 4)}-${ss.substring(4, 6)}";
+    title += " ${ss.substring(7, 9)}:${ss.substring(9, 11)}";
+
     return title;
   }
 
   String trimExtName(String title) {
     List list = ['3gpp', 'webm', 'mp4', 'mp3'];
-    for(var i = 0; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
       title = title.replaceAll(".${list[i]}", "");
     }
     return title;
@@ -104,17 +108,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     final player = AudioPlayer();
 
     List playlist = [];
-    if(title == "MyTube2") {
+    if (title == "MyTube2") {
       PlayList pl = PlayList();
       playlist = await pl.read(root);
     }
 
-    for(var i = 0; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
-      if(title == "MyTube2") {
+      if (title == "MyTube2") {
         var f1 = File(fullName);
         // print("file: $fullName: ${f1.lengthSync()}");
-        if(f1.lengthSync() == 0){
+        if (f1.lengthSync() == 0) {
           f1.deleteSync();
           continue;
         }
@@ -123,27 +127,28 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       var duration = await player.setUrl(fullName);
       String songName = trimExtName(list[i]);
       String author = "";
-      if(title == "MyTube2") {
-        for(var x = 0; x < playlist.length; x++) {
+      if (title == "MyTube2") {
+        for (var x = 0; x < playlist.length; x++) {
           var e = playlist[x];
-          if(e["audioName"] == fullName) {
+          if (e["audioName"] == fullName) {
             songName = e["title"];
             author = e["author"];
             break;
           }
         }
-      } else if(songName.contains("-") && ! songName.contains("=")) {
+      } else if (songName.contains("-") && !songName.contains("=")) {
         List<String> arr = songName.split("-");
         songName = arr[1].trim();
-        if(! arr[0].trim().isNumeric()) { // 有可能是數字，不要
-          author = arr[0].trim();          
+        if (!arr[0].trim().isNumeric()) {
+          // 有可能是數字，不要
+          author = arr[0].trim();
         }
       }
 
       var item = MediaItem(
         id: fullName,
         title: songName,
-        album: title,  // 目錄名稱
+        album: title, // 目錄名稱
         artist: author,
         duration: duration,
       );
@@ -157,7 +162,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
 
   Future<void> initialCollect(List datas) async {
     final player = AudioPlayer();
-    for(var i = 0; i < datas.length; i++) {
+    for (var i = 0; i < datas.length; i++) {
       String path = datas[i];
       List paths = path.split("/");
       // print(datas[i]);
@@ -175,30 +180,32 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Future<void> intitialAudio() async {
-    if(songs.isNotEmpty) {
+    if (songs.isNotEmpty) {
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
         config: const AudioServiceConfig(
-          androidNotificationChannelId: 'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
-          androidNotificationChannelName: '音樂播放器',
-          androidNotificationOngoing: true,
-          androidNotificationIcon: "mipmap/ic_launcher"
-        ),
+            androidNotificationChannelId:
+                'com.flutter.audio_player', // 'com.ryanheise.myapp.channel.audio',
+            androidNotificationChannelName: '音樂播放器',
+            androidNotificationOngoing: true,
+            androidNotificationIcon: "mipmap/ic_launcher"),
       );
-      
+
       _audioHandler!.init();
-      if(loop == 1) {
+      if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
       }
     }
   }
+
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
   }
 
   @override
-  void reassemble() async { // develope mode
+  void reassemble() async {
+    // develope mode
     super.reassemble();
     // initialDirectory();
     _animateToIndex(0);
@@ -230,32 +237,30 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   @override
   Widget build(BuildContext context) {
     final Widget child;
-    if(isReady) {
+    if (isReady) {
       child = StreamBuilder<MediaItem?>(
-        stream: _audioHandler!.currentSong,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const SizedBox();
-          }
-          final song = snapshot.data!;
+          stream: _audioHandler!.currentSong,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox();
+            }
+            final song = snapshot.data!;
 
-          return Container(
-            color: Colors.black87,
-            child: Column(children: [ 
-              Expanded(
-                flex: 1,
-                child: _buildListview(song),
-              ),
-              if(!bEdit && _audioHandler != null && songs.isNotEmpty)
-                _buildSlider(),
-              if(!bEdit && _audioHandler != null && songs.isNotEmpty)
-                _buildControls(),
-              if(bEdit)
-                _buildEdit()
-            ]),
-          );
-        }
-      );
+            return Container(
+              color: Colors.black87,
+              child: Column(children: [
+                Expanded(
+                  flex: 1,
+                  child: _buildListview(song),
+                ),
+                if (!bEdit && _audioHandler != null && songs.isNotEmpty)
+                  _buildSlider(),
+                if (!bEdit && _audioHandler != null && songs.isNotEmpty)
+                  _buildControls(),
+                if (bEdit) _buildEdit()
+              ]),
+            );
+          });
     } else {
       child = const Center(
         child: CircularProgressIndicator(),
@@ -263,62 +268,72 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     }
 
     Widget iconLoop = const Icon(Icons.repeat, color: Colors.white);
-    if(loop == 1) {
+    if (loop == 1) {
       iconLoop = const Icon(Icons.repeat_one, color: Colors.white);
-    } else if(loop == 10) {
+    } else if (loop == 10) {
       iconLoop = const Icon(Icons.repeat, color: Colors.white);
     }
-    
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_sharp,
-              color: Colors.white,
-            ),
-            onPressed: () => backTo(),
-          ),
-          title: Text(title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle( color:Colors.white,)
-          ),
-          actions: [
-            if(_audioHandler != null && songs.isNotEmpty)
-              _buildPopMenuSleep(),
-            if(_audioHandler != null && songs.isNotEmpty)
-              IconButton(
-                icon: iconLoop,
-                onPressed: () async {
-                  LoopMode mode = LoopMode.off;
-                  if(loop == 0) {
-                    loop = 1;
-                    mode = LoopMode.one;
-                  // } else if(loop == 1) {
-                  //   loop = 10;
-                  //   mode = LoopMode.all;
-                  } else {
-                    loop = 0;
-                  }
-                  _audioHandler!.setLoopMode(mode); // 0 off/1 one/10 all
-                  await Storage.setInt("loop", loop);
-                  setState(() { });
-                },
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light, // 強制 Android 圖示為白色
+      ),
+      child: Container(
+        color: Colors.black,
+        child: SafeArea(
+          top: true,
+          child: Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_sharp,
+                  color: Colors.white,
+                ),
+                onPressed: () => backTo(),
               ),
-          ],
-          backgroundColor: Colors.deepOrangeAccent, 
+              title: Text(title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                  )),
+              actions: [
+                if (_audioHandler != null && songs.isNotEmpty)
+                  _buildPopMenuSleep(),
+                if (_audioHandler != null && songs.isNotEmpty)
+                  IconButton(
+                    icon: iconLoop,
+                    onPressed: () async {
+                      LoopMode mode = LoopMode.off;
+                      if (loop == 0) {
+                        loop = 1;
+                        mode = LoopMode.one;
+                        // } else if(loop == 1) {
+                        //   loop = 10;
+                        //   mode = LoopMode.all;
+                      } else {
+                        loop = 0;
+                      }
+                      _audioHandler!.setLoopMode(mode); // 0 off/1 one/10 all
+                      await Storage.setInt("loop", loop);
+                      setState(() {});
+                    },
+                  ),
+              ],
+              backgroundColor: Colors.deepOrangeAccent,
+            ),
+            body: PopScope(
+                canPop: false,
+                onPopInvokedWithResult: (bool didPop, dynamic result) {
+                  if (didPop) {
+                    return;
+                  }
+                  backTo();
+                },
+                child: child),
+          ),
         ),
-        body: PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (bool didPop, dynamic result) {
-              if (didPop) {
-                return;
-              }
-              backTo();
-            },
-            child: child
-        )
-      )
+      ),
     );
   }
 
@@ -326,31 +341,29 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     var arr = [3, 5, 10, 15, 20, 30, 45, 60, 90, 120];
 
     return PopupMenuButton<int>(
-      icon: const Icon(Icons.alarm, color: Colors.white),
-      offset: const Offset(0, 40),
-      itemBuilder: (context) {
-        return [
-          for (var i = 0; i < arr.length; i++)
-            CheckedPopupMenuItem<int>(
-              value: arr[i],
-              checked: sleepTime == arr[i],
-              child: Text('${arr[i]} 分鐘', 
-                style: TextStyle(
-                  fontSize: 18,
-                  color: defaultSleepTime == arr[i] ? Colors.red : Colors.black
-                )
-              )
-            ),
-        ];
-      },
-      onSelected: (int value) {
-        sleepTime = value;
-        defaultSleepTime = -1;
-        spendSeconds = 0;
-        Storage.setInt("sleepTime", sleepTime);
-        setState(() {});
-      }
-    );
+        icon: const Icon(Icons.alarm, color: Colors.white),
+        offset: const Offset(0, 40),
+        itemBuilder: (context) {
+          return [
+            for (var i = 0; i < arr.length; i++)
+              CheckedPopupMenuItem<int>(
+                  value: arr[i],
+                  checked: sleepTime == arr[i],
+                  child: Text('${arr[i]} 分鐘',
+                      style: TextStyle(
+                          fontSize: 18,
+                          color: defaultSleepTime == arr[i]
+                              ? Colors.red
+                              : Colors.black))),
+          ];
+        },
+        onSelected: (int value) {
+          sleepTime = value;
+          defaultSleepTime = -1;
+          spendSeconds = 0;
+          Storage.setInt("sleepTime", sleepTime);
+          setState(() {});
+        });
   }
 
   Widget _buildListview(MediaItem song) {
@@ -362,7 +375,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       itemCount: songs.length,
       itemExtent: _height,
       itemBuilder: (BuildContext context, int index) {
-        return _buildRow(index, song.id == songs[index].id); 
+        return _buildRow(index, song.id == songs[index].id);
       },
     );
   }
@@ -370,146 +383,137 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   Widget _buildRow(int index, bool active) {
     MediaItem song = songs[index];
     var duration = "${song.duration}".split(".")[0];
-    if(duration.startsWith("0:")) {
+    if (duration.startsWith("0:")) {
       duration = duration.substring(2);
     }
     Widget widget1 = Container(
-      width: 20,
-      margin: const EdgeInsets.only(right: 2),
-      // decoration: BoxDecoration(
-      //   border: Border.all(width: 1.0, color: Colors.white),
-      // ),
-      child: active && !bEdit
-        ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
-        : Text((index < 9 ? "0" : "") + (index + 1).toString(), 
-            textAlign: TextAlign.center,
-            style: const TextStyle(color:Colors.grey, fontSize: 12)
-          ) 
-    );
-    Widget? widget2B = title == "MyTube2" || (song.artist != null && song.artist!.isNotEmpty) ? 
-      Row(
-        mainAxisAlignment: MainAxisAlignment.start,
+        width: 20,
+        margin: const EdgeInsets.only(right: 2),
+        // decoration: BoxDecoration(
+        //   border: Border.all(width: 1.0, color: Colors.white),
+        // ),
+        child: active && !bEdit
+            ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
+            : Text((index < 9 ? "0" : "") + (index + 1).toString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey, fontSize: 12)));
+    Widget? widget2B = title == "MyTube2" ||
+            (song.artist != null && song.artist!.isNotEmpty)
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                if (song.artist != null && song.artist!.isNotEmpty)
+                  Text("  ${song.artist!}",
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.ltr,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 12)),
+                Expanded(
+                    flex: 1,
+                    child: Container(
+                      width: 5,
+                    )),
+                if (title == "MyTube2")
+                  Text(trimFullName(song.id),
+                      softWrap: true,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.ltr,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 12)),
+              ])
+        : null;
+    Widget widget2 = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if(song.artist != null && song.artist!.isNotEmpty)
-            Text("  ${song.artist!}",
+          Text(song.title,
               softWrap: true,
               overflow: TextOverflow.ellipsis,
               textDirection: TextDirection.ltr,
-              style: const TextStyle(color:Colors.white, fontSize: 12)
-            ),
-          Expanded(flex: 1, child: Container(width: 5,)), 
-          if(title == "MyTube2")
-            Text(trimFullName(song.id),
-              softWrap: true,
-              overflow: TextOverflow.ellipsis,
-              textDirection: TextDirection.ltr,
-              style: const TextStyle(color:Colors.white, fontSize: 12)
-            ),
-        ]
-      ) : null;
-    Widget widget2 = Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(song.title,
-          softWrap: true,
-          overflow: TextOverflow.ellipsis,
-          textDirection: TextDirection.ltr,
-          style: const TextStyle(color:Colors.white, fontSize: 18)
-        ),
-        if(widget2B != null)
-          Container(child: widget2B)
-      ]
-    );
+              style: const TextStyle(color: Colors.white, fontSize: 18)),
+          if (widget2B != null) Container(child: widget2B)
+        ]);
 
     return Container(
-      decoration: const BoxDecoration(
-        // color: Colors.green,
-        border: Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onLongPress: () {
-                  if(bEdit == false) {
-                    onLongPress(index);
-                  }
-                },
-                onTap: () {
-                  if(bEdit == false) {
-                    _audioHandler!.setSong(song);
-                    _audioHandler!.play();
-                  } else {
-
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  child: Row(
-                    children: [
-                      widget1,
-                      Expanded( flex: 1, child: widget2),
-                      if(!bEdit) 
-                        Padding(padding: const EdgeInsets.only(left: 2.0),
-                          child: Text(duration,
-                            // softWrap: true,
-                            // overflow: TextOverflow.ellipsis,
-                            // textDirection: TextDirection.ltr,
-                            style: const TextStyle(
-                              color:Colors.white,
-                              fontSize: 14
-                            )
-                          )
-                        ),
-                      if(bEdit && marked.contains("'$index'"))
-                        IconButton(
-                          iconSize: 20,
-                          icon: const Icon(Icons.check_box_rounded, color: Colors.white),
-                          onPressed: () {
-                            marked = marked.replaceAll("'$index'", "");
-                            setState(() { });
-                          },
-                        ),
-                      if(bEdit && ! marked.contains("'$index'"))
-                        IconButton(
-                          iconSize: 20,
-                          icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
-                          onPressed: () {
-                            marked += "'$index'";
-                            setState(() { });
-                          },
-                        ),
-                    ]
-                  )
-                ),
-              )
-            )
-          )
-        ],
-      )
-    );
+        decoration: const BoxDecoration(
+          // color: Colors.green,
+          border:
+              Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+                flex: 1,
+                child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onLongPress: () {
+                        if (bEdit == false) {
+                          onLongPress(index);
+                        }
+                      },
+                      onTap: () {
+                        if (bEdit == false) {
+                          _audioHandler!.setSong(song);
+                          _audioHandler!.play();
+                        } else {}
+                      },
+                      child: Container(
+                          padding: const EdgeInsets.all(5),
+                          child: Row(children: [
+                            widget1,
+                            Expanded(flex: 1, child: widget2),
+                            if (!bEdit)
+                              Padding(
+                                  padding: const EdgeInsets.only(left: 2.0),
+                                  child: Text(duration,
+                                      // softWrap: true,
+                                      // overflow: TextOverflow.ellipsis,
+                                      // textDirection: TextDirection.ltr,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 14))),
+                            if (bEdit && marked.contains("'$index'"))
+                              IconButton(
+                                iconSize: 20,
+                                icon: const Icon(Icons.check_box_rounded,
+                                    color: Colors.white),
+                                onPressed: () {
+                                  marked = marked.replaceAll("'$index'", "");
+                                  setState(() {});
+                                },
+                              ),
+                            if (bEdit && !marked.contains("'$index'"))
+                              IconButton(
+                                iconSize: 20,
+                                icon: const Icon(
+                                    Icons.check_box_outline_blank_rounded,
+                                    color: Colors.white),
+                                onPressed: () {
+                                  marked += "'$index'";
+                                  setState(() {});
+                                },
+                              ),
+                          ])),
+                    )))
+          ],
+        ));
   }
-  
+
   onLongPress(int index) {
     _audioHandler!.stop();
     marked = "'$index'";
-    if(mode == "Directory") {
-      
-    } else {
-
-    }
+    if (mode == "Directory") {
+    } else {}
     bEdit = true;
-    setState(() { });
+    setState(() {});
   }
-  
+
   Widget _buildControls() {
     return StreamBuilder<bool>(
-      stream: _audioHandler!.playbackState.map((state) => state.playing).distinct(),
+      stream:
+          _audioHandler!.playbackState.map((state) => state.playing).distinct(),
       builder: (context, snapshot) {
         final playing = snapshot.data ?? false;
         final queueIndex = songs.indexOf(_audioHandler!.currentSong.value);
@@ -518,23 +522,29 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(flex: 1, child: Container()),
-            _button(Icons.skip_previous, _audioHandler!.skipToPrevious, visible: queueIndex > 0),
+            _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
+                visible: queueIndex > 0),
             if (playing)
               _button(Icons.pause, _audioHandler!.pause)
             else
               _button(Icons.play_arrow, () {
                 _audioHandler!.play();
-                setState(() { });
+                setState(() {});
               }),
             _button(Icons.stop, _audioHandler!.stop),
-            _button(Icons.skip_next, _audioHandler!.skipToNext, visible: queueIndex < songs.length -1),
-            Expanded(flex: 1, 
-              child: Row(children: [
-                Expanded(flex: 1, child: Container()),
-               _buildSpendTime(),
-               const SizedBox(width: 5,)
-              ],
-            )),
+            _button(Icons.skip_next, _audioHandler!.skipToNext,
+                visible: queueIndex < songs.length - 1),
+            Expanded(
+                flex: 1,
+                child: Row(
+                  children: [
+                    Expanded(flex: 1, child: Container()),
+                    _buildSpendTime(),
+                    const SizedBox(
+                      width: 5,
+                    )
+                  ],
+                )),
           ],
         );
       },
@@ -542,89 +552,88 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   Widget _buildSpendTime() {
-     return StreamBuilder<Duration>(
-      stream: _audioHandler!.currentPosition,
-      builder: (context, snapshot) {
-        int sub = (sleepTime * 60) - spendSeconds;
-        String total =  "-${Duration(seconds: sub).format()}";
+    return StreamBuilder<Duration>(
+        stream: _audioHandler!.currentPosition,
+        builder: (context, snapshot) {
+          int sub = (sleepTime * 60) - spendSeconds;
+          String total = "-${Duration(seconds: sub).format()}";
 
-        return Text(total,
-          style: const TextStyle(
-            color: Colors.orange,
-            fontSize: 18,
-          )
-        );
-      }
-    );
+          return Text(total,
+              style: const TextStyle(
+                color: Colors.orange,
+                fontSize: 18,
+              ));
+        });
   }
 
   Widget _buildSlider() {
     return StreamBuilder<Duration>(
-      stream: _audioHandler!.currentPosition,
-      builder: (context, snapshot) {
-        var currentPosition = (snapshot.data ?? const Duration(seconds: 0)).inSeconds.toDouble();
-        Duration? duration = _audioHandler!.currentSong.value.duration; 
-        final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
-        if(currentPosition > xx) currentPosition = 0;
+        stream: _audioHandler!.currentPosition,
+        builder: (context, snapshot) {
+          var currentPosition = (snapshot.data ?? const Duration(seconds: 0))
+              .inSeconds
+              .toDouble();
+          Duration? duration = _audioHandler!.currentSong.value.duration;
+          final xx =
+              (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
+          if (currentPosition > xx) currentPosition = 0;
 
-        var str = "-${Duration(seconds: (xx - currentPosition).toInt()).format()}"; // (xx - currentPosition) == 0 ? ""  : 
-        
-        return  Row(
-          children: [
-            Expanded(flex: 1, 
-              child:  Slider(
-                value: currentPosition,
-                max: xx,
-                // divisions: 5,
-                // label: currentPosition.format(),
-                onChanged: (double value) {
-                  setState(() {
-                    _audioHandler!.seek(Duration(seconds: value.toInt()));
-                  });
-                },
-              )
-            ),
+          var str =
+              "-${Duration(seconds: (xx - currentPosition).toInt()).format()}"; // (xx - currentPosition) == 0 ? ""  :
+
+          return Row(children: [
+            Expanded(
+                flex: 1,
+                child: Slider(
+                  value: currentPosition,
+                  max: xx,
+                  // divisions: 5,
+                  // label: currentPosition.format(),
+                  onChanged: (double value) {
+                    setState(() {
+                      _audioHandler!.seek(Duration(seconds: value.toInt()));
+                    });
+                  },
+                )),
             // if(currentPosition > 0)
-              Text(str,
+            Text(str,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                )
-              ),
+                )),
             const SizedBox(width: 5),
-          ]
-        );
-      }
-    );
+          ]);
+        });
   }
 
   Widget _buildEdit() {
-    return Container(   
+    return Container(
       height: 60,
       // decoration: BoxDecoration(
       //   border: Border.all(color: Colors.blueAccent),
       //   // borderRadius: BorderRadius.circular(10),
       // ),
       child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if(mode == "Directory" && marked.isNotEmpty)
-              _button(Icons.bookmark, addBookMark, visible: true),
-            if(mode != "Directory" && marked.isNotEmpty)
-              _button(Icons.content_cut, cut, visible: true),
-            if(mode == "Directory" && marked.isNotEmpty && title == "MyTube2")
-              _button(Icons.delete, delete, visible: true),
-            _button(Icons.undo, undo, visible: true),
-          ],
-        ),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (mode == "Directory" && marked.isNotEmpty)
+            _button(Icons.bookmark, addBookMark, visible: true),
+          if (mode != "Directory" && marked.isNotEmpty)
+            _button(Icons.content_cut, cut, visible: true),
+          if (mode == "Directory" && marked.isNotEmpty && title == "MyTube2")
+            _button(Icons.delete, delete, visible: true),
+          _button(Icons.undo, undo, visible: true),
+        ],
+      ),
     );
   }
 
-  addBookMark() async { // 加入清單
+  addBookMark() async {
+    // 加入清單
     List<String> books = marked.split("''");
 
     List list = await Storage.getJsonList("Collects");
-    Widget listview =  Container(
+    Widget listview = Container(
       height: 300.0, // Change as per your requirement
       width: 310.0, // Change as per your requirement
       child: ListView.builder(
@@ -634,11 +643,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
           return ListTile(
             title: Text(list[index]["title"]),
             onTap: () async {
-              for(var i = 0; i < books.length; i++) {
+              for (var i = 0; i < books.length; i++) {
                 int j = int.parse(books[i].replaceAll("'", ""));
                 // print(songs[j].id);
                 var b = list[index]["datas"].any((item) => item == songs[j].id);
-                if(! b) {
+                if (!b) {
                   list[index]["datas"].add(songs[j].id);
                 }
               }
@@ -655,36 +664,36 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
         },
       ),
     );
-    
+
     // ignore: use_build_context_synchronously
     showDialog(
-      context: context,
-      // barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('清單'),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-          content: listview,
-        );
-      }
-    );
+        context: context,
+        // barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('清單'),
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(5.0))),
+            content: listview,
+          );
+        });
   }
 
   cut() async {
     List list = await Storage.getJsonList("Collects");
     int index = list.indexWhere((el) => el["title"] == title);
-    if(index != -1) {
+    if (index != -1) {
       List<String> books = marked.split("''");
       List<int> arr = [];
-      for(var i = 0; i < books.length; i++) {
-        arr.add( int.parse(books[i].replaceAll("'", "")));
+      for (var i = 0; i < books.length; i++) {
+        arr.add(int.parse(books[i].replaceAll("'", "")));
       }
       arr.sort();
-      for(var i = arr.length - 1; i >= 0; i--) {
+      for (var i = arr.length - 1; i >= 0; i--) {
         int j = arr[i];
 
         int index2 = list[index]["datas"].indexWhere((el) => el == songs[j].id);
-        if(index2 != -1) {
+        if (index2 != -1) {
           list[index]["datas"].removeAt(index2);
           songs.removeAt(j);
           dirty = true;
@@ -692,7 +701,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       }
       await Storage.setJsonList("Collects", list);
     }
-    
+
     marked = "";
     bEdit = false;
     setState(() {});
@@ -702,11 +711,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
     _audioHandler!.stop();
     List<String> books = marked.split("''");
     List<int> arr = [];
-    for(var i = 0; i < books.length; i++) {
-      arr.add( int.parse(books[i].replaceAll("'", "")));
+    for (var i = 0; i < books.length; i++) {
+      arr.add(int.parse(books[i].replaceAll("'", "")));
     }
     arr.sort();
-    for(var i = arr.length - 1; i >= 0; i--) {
+    for (var i = arr.length - 1; i >= 0; i--) {
       int j = arr[i];
       var f = File(songs[j].id);
       if (f.existsSync()) {
@@ -716,7 +725,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
       songs.removeAt(j);
       dirty = true;
     }
-    
+
     marked = "";
     bEdit = false;
     initialDirectory();
@@ -731,23 +740,24 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver{
   }
 
   void _animateToIndex(int index) {
-    if(_controller.positions.isEmpty) {
+    if (_controller.positions.isEmpty) {
       return;
     }
-    
+
     final visibleRange = _controller.position.viewportDimension;
     double pos = -1, newPos = index * _height;
-    if(newPos < _controller.offset) {
+    if (newPos < _controller.offset) {
       pos = index * _height;
-    } else if(newPos > _controller.offset + visibleRange) {
+    } else if (newPos > _controller.offset + visibleRange) {
       pos = index * _height;
     }
 
-    if(pos > -1) {
-      _controller.animateTo(pos,
+    if (pos > -1) {
+      _controller.animateTo(
+        pos,
         duration: const Duration(seconds: 2),
         curve: Curves.fastOutSlowIn,
-      );      
+      );
     }
   }
 }
@@ -761,20 +771,20 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
   void init() async {
     currentPosition.add(Duration.zero);
-    if(bInitial == false) {
+    if (bInitial == false) {
       _player.playbackEventStream.listen(_broadcastState);
 
       AudioService.position.listen((Duration position) {
-        if(position.inSeconds != _oldSeconds) {
+        if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
 
           // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
-          if(sleepTime != 0 && spendSeconds >= sleepTime * 60) {
+          if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
             pause();
             spendSeconds = 0;
             // print("positition: pause, spendSeconds: $spendSeconds, $timeline");
-          } else if(position.inSeconds > 0 && _player.playing) {
+          } else if (position.inSeconds > 0 && _player.playing) {
             spendSeconds++;
             // print("positition: playing: ${_player.playing}, spendSeconds: $spendSeconds, $timeline");
           }
@@ -791,10 +801,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     }
     queue.add(songs);
 
-    if(songs.isNotEmpty) {
+    if (songs.isNotEmpty) {
       setSong(songs.first);
     }
   }
+
   void destroy() {
     _player.dispose();
   }
@@ -807,7 +818,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     currentSong.add(song);
     mediaItem.add(song);
     await _player.setAudioSource(
-      ProgressiveAudioSource(Uri.parse(song.id)), // 
+      ProgressiveAudioSource(Uri.parse(song.id)), //
     );
   }
 
@@ -842,7 +853,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     final queueIndex = songs.indexOf(currentSong.value);
 
     // print("state: ${event.processingState}, index: $queueIndex / ${songs.length -1}");
-    if(event.processingState == ProcessingState.completed && queueIndex == songs.length -1) {
+    if (event.processingState == ProcessingState.completed &&
+        queueIndex == songs.length - 1) {
       spendSeconds = 0;
     }
     playbackState.add(playbackState.value.copyWith(
@@ -876,14 +888,14 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
 class PlayList {
   // PlayList() { }
-  Future<List> read(String root) async { 
+  Future<List> read(String root) async {
     String s = "";
     File file = File("$root/MyTube2/playlist.txt");
-    if(file.existsSync()) {
+    if (file.existsSync()) {
       s = file.readAsStringSync();
     }
     List datas = [];
-    if(s.isNotEmpty) {
+    if (s.isNotEmpty) {
       datas = jsonDecode(s);
     }
     return datas;
