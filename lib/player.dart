@@ -64,7 +64,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
         String active = await Storage.getString("playDirectory");
         defaultSleepTime = await Storage.getInt("sleepTime");
-        loop = await Storage.getInt("loop");
 
         if (songs.isEmpty || active != path || title == "MyTube2") {
           songs = [];
@@ -180,6 +179,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   Future<void> intitialAudio() async {
+    loop = await Storage.getInt("loop$mode");
     if (songs.isNotEmpty) {
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
@@ -190,12 +190,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             androidNotificationOngoing: true,
             androidNotificationIcon: "mipmap/ic_launcher"),
       );
-
       _audioHandler!.init();
       if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
       }
     }
+    print("loop: ${loop}");
   }
 
   @override
@@ -304,18 +304,18 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   IconButton(
                     icon: iconLoop,
                     onPressed: () async {
-                      LoopMode mode = LoopMode.off;
+                      LoopMode loopMode = LoopMode.off;
                       if (loop == 0) {
                         loop = 1;
-                        mode = LoopMode.one;
+                        loopMode = LoopMode.one;
                         // } else if(loop == 1) {
                         //   loop = 10;
                         //   mode = LoopMode.all;
                       } else {
                         loop = 0;
                       }
-                      _audioHandler!.setLoopMode(mode); // 0 off/1 one/10 all
-                      await Storage.setInt("loop", loop);
+                      _audioHandler!.setLoopMode(loopMode); // 0 off/1 one/10 all
+                      await Storage.setInt("loop$mode", loop);
                       setState(() {});
                     },
                   ),
@@ -553,17 +553,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
   Widget _buildSpendTime() {
     return StreamBuilder<Duration>(
-        stream: _audioHandler!.currentPosition,
-        builder: (context, snapshot) {
-          int sub = (sleepTime * 60) - spendSeconds;
-          String total = "-${Duration(seconds: sub).format()}";
+      stream: _audioHandler!.currentPosition,
+      builder: (context, snapshot) {
+        int sub = (sleepTime * 60) - spendSeconds;
+        String total = "-${Duration(seconds: sub).format()}";
 
-          return Text(total,
-              style: const TextStyle(
-                color: Colors.orange,
-                fontSize: 18,
-              ));
-        });
+        return Text(total,
+            style: const TextStyle(
+              color: Colors.orange,
+              fontSize: 18,
+            ));
+      });
   }
 
   Widget _buildSlider() {

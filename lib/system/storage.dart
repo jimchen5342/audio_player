@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -30,6 +31,7 @@ class Storage {
   static setInt(String key, int value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setInt(key, value);
+    // print("setInt: $key = $value");
   }
 
   // 设置Sting的值
@@ -62,6 +64,7 @@ class Storage {
   static getInt(String key) async {
     final prefs = await SharedPreferences.getInstance();
     int value = prefs.getInt(key) ?? 0;
+    // print("getInt: $key = $value");
     return value;
   }
 
