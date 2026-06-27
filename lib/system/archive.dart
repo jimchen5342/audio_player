@@ -69,11 +69,7 @@ class Archive {
         list.add(title);
       }
     }
-    if(directoryPath == "MyTube2") {
-      return list..sort((b, a) => a.compareTo(b));
-    } else {
-      return list..sort();
-    }
+    return list..sort();
   }
 
   bool isMusic(File file) {

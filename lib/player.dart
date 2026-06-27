@@ -65,7 +65,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         String active = await Storage.getString("playDirectory");
         defaultSleepTime = await Storage.getInt("sleepTime");
 
-        if (songs.isEmpty || active != path || title == "MyTube2") {
+        if (songs.isEmpty || active != path) {
           songs = [];
           await initialDirectory();
           await Storage.setString("playDirectory", path);
@@ -100,42 +100,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     return title;
   }
 
-  Future<void> initialDirectory() async {
+  Future<void> initialDirectory() async { // 資料夾
     String root = await Archive.root();
     Archive archive = Archive();
     List<String> list = await archive.getFiles(path);
     final player = AudioPlayer();
 
     List playlist = [];
-    if (title == "MyTube2") {
-      PlayList pl = PlayList();
-      playlist = await pl.read(root);
-    }
-
     for (var i = 0; i < list.length; i++) {
       var fullName = "$root/$path/${list[i]}";
-      if (title == "MyTube2") {
-        var f1 = File(fullName);
-        // print("file: $fullName: ${f1.lengthSync()}");
-        if (f1.lengthSync() == 0) {
-          f1.deleteSync();
-          continue;
-        }
-      }
-
       var duration = await player.setUrl(fullName);
       String songName = trimExtName(list[i]);
       String author = "";
-      if (title == "MyTube2") {
-        for (var x = 0; x < playlist.length; x++) {
-          var e = playlist[x];
-          if (e["audioName"] == fullName) {
-            songName = e["title"];
-            author = e["author"];
-            break;
-          }
-        }
-      } else if (songName.contains("-") && !songName.contains("=")) {
+      if (songName.contains("-") && !songName.contains("=")) {
         List<String> arr = songName.split("-");
         songName = arr[1].trim();
         if (!arr[0].trim().isNumeric()) {
@@ -159,7 +136,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     return;
   }
 
-  Future<void> initialCollect(List datas) async {
+  Future<void> initialCollect(List datas) async { // 清單
+    // datas.sort();
     final player = AudioPlayer();
     for (var i = 0; i < datas.length; i++) {
       String path = datas[i];
@@ -397,8 +375,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             : Text((index < 9 ? "0" : "") + (index + 1).toString(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.grey, fontSize: 12)));
-    Widget? widget2B = title == "MyTube2" ||
-            (song.artist != null && song.artist!.isNotEmpty)
+    Widget? widget2B = (song.artist != null && song.artist!.isNotEmpty)
         ? Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,13 +392,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                     child: Container(
                       width: 5,
                     )),
-                if (title == "MyTube2")
-                  Text(trimFullName(song.id),
-                      softWrap: true,
-                      overflow: TextOverflow.ellipsis,
-                      textDirection: TextDirection.ltr,
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 12)),
               ])
         : null;
     Widget widget2 = Column(
@@ -521,6 +491,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if(mode == "Collect")
+              _button(Icons.add_location, () {
+                    // setState(() {});
+              }),
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
                 visible: queueIndex > 0),
@@ -620,8 +594,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             _button(Icons.bookmark, addBookMark, visible: true),
           if (mode != "Directory" && marked.isNotEmpty)
             _button(Icons.content_cut, cut, visible: true),
-          if (mode == "Directory" && marked.isNotEmpty && title == "MyTube2")
-            _button(Icons.delete, delete, visible: true),
           _button(Icons.undo, undo, visible: true),
         ],
       ),
@@ -631,8 +603,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   addBookMark() async {
     // 加入清單
     List<String> books = marked.split("''");
-
     List list = await Storage.getJsonList("Collects");
+    if(list.isEmpty) {
+      list.add({"title": "我的最愛", "datas": []});
+      list.add({"title": "英語", "datas": []});
+      list.add({"title": "日語", "datas": []});
+      await Storage.setJsonList("Collects", list);
+    }
     Widget listview = Container(
       height: 300.0, // Change as per your requirement
       width: 310.0, // Change as per your requirement
@@ -645,12 +622,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             onTap: () async {
               for (var i = 0; i < books.length; i++) {
                 int j = int.parse(books[i].replaceAll("'", ""));
-                // print(songs[j].id);
                 var b = list[index]["datas"].any((item) => item == songs[j].id);
                 if (!b) {
                   list[index]["datas"].add(songs[j].id);
                 }
               }
+              list[index]["datas"].sort();
               await Storage.setJsonList("Collects", list);
               // ignore: use_build_context_synchronously
               marked = "";
@@ -883,21 +860,5 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       speed: _player.speed,
       queueIndex: queueIndex,
     ));
-  }
-}
-
-class PlayList {
-  // PlayList() { }
-  Future<List> read(String root) async {
-    String s = "";
-    File file = File("$root/MyTube2/playlist.txt");
-    if (file.existsSync()) {
-      s = file.readAsStringSync();
-    }
-    List datas = [];
-    if (s.isNotEmpty) {
-      datas = jsonDecode(s);
-    }
-    return datas;
   }
 }

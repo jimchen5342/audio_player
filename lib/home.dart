@@ -133,13 +133,12 @@ class _HomeState extends State<Home> {
     list = await Storage.getJsonList("Collects");
     if(list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
-      list.add({"title": "VOA", "datas": []});
       list.add({"title": "英語", "datas": []});
       list.add({"title": "日語", "datas": []});
       await Storage.setJsonList("Collects", list);
     } else {
+      _animateToIndex(0);
       int activeIndex = -1;
-
       if(list.length > 10) {
         for(var i = 0; i < list.length; i++) {
           if(activeDirectory == list[i]["title"]){
@@ -496,7 +495,7 @@ class _HomeState extends State<Home> {
                               fontSize: 18
                             )
                           ),
-                          if(activeBar == 0 &&list[index]["title"] != "MyTube2" && list[index]["count"] != null)
+                          if(activeBar == 0 && list[index]["count"] != null)
                             Text("   ${list[index]["count"]}首",
                               style: const TextStyle(
                                 color: Colors.white,
