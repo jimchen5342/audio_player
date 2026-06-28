@@ -8,10 +8,14 @@ import 'package:audio_player/system/module.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:flutter/services.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
 int spendSeconds = 0, sleepTime = 30;
+dynamic history = {};
+String mode = "Directory";
+MethodChannel _platform = MethodChannel('com.flutter/MethodChannel');
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -21,11 +25,12 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver {
-  String title = "", path = "", mode = "Directory", marked = "";
-  bool isReady = false, bEdit = false, dirty = false;
+  String title = "", path = "", marked = "";
+  bool isReady = false, bRowLongPress = false, dirty = false, bPosition = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
+  
 
   Widget _button(IconData iconData, VoidCallback onPressed,
       {bool visible = true}) {
@@ -61,9 +66,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       if (arg["path"] is String) {
         mode = "Directory";
         path = arg["path"] as String;
+        loop = await Storage.getInt("loop$mode");
 
         String active = await Storage.getString("playDirectory");
         defaultSleepTime = await Storage.getInt("sleepTime");
+        history = await Storage.getJson("historyDirectory");
+        if(history['title'] is String && history['title'] != title) {
+          history = {};
+        }
+        history['title'] = title;
 
         if (songs.isEmpty || active != path) {
           songs = [];
@@ -72,6 +83,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         }
       } else {
         mode = "Collect";
+        loop = await Storage.getInt("loop$mode");
+        history = await Storage.getJson("historyCollect");
+        if(history['title'] is String && history['title'] != title) {
+          history = {};
+        }
+        history['title'] = title;
         songs = [];
         // print(arg["datas"]);
         await initialCollect(arg["datas"]);
@@ -132,7 +149,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
 
     await intitialAudio();
-
     return;
   }
 
@@ -157,7 +173,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   Future<void> intitialAudio() async {
-    loop = await Storage.getInt("loop$mode");
     if (songs.isNotEmpty) {
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
@@ -171,9 +186,34 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       _audioHandler!.init();
       if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
+      } else if (loop == 10) {
+        _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
+      }
+      int index = 0;
+      String? historyId;
+      if (history != null) {
+        if (history['id'] is String) {
+          historyId = history['id'] as String;
+        }
+      }
+      if (historyId != null) {
+        final found = songs.indexWhere((item) => item.id == historyId);
+        if (found != -1) {
+          index = found;
+        } else {
+          history["start"] = null;
+          history["end"] = null;
+        }
+      }
+
+      if(index > 0) {
+        Timer(const Duration(milliseconds: 600), () {
+          MediaItem song = songs[index];
+          _audioHandler!.setSong(song);
+          if(index > 6) _animateToIndex(index);
+        });
       }
     }
-    print("loop: ${loop}");
   }
 
   @override
@@ -223,7 +263,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               return const SizedBox();
             }
             final song = snapshot.data!;
-
             return Container(
               color: Colors.black87,
               child: Column(children: [
@@ -231,11 +270,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   flex: 1,
                   child: _buildListview(song),
                 ),
-                if (!bEdit && _audioHandler != null && songs.isNotEmpty)
+                if (!bRowLongPress && _audioHandler != null && songs.isNotEmpty)
                   _buildSlider(),
-                if (!bEdit && _audioHandler != null && songs.isNotEmpty)
-                  _buildControls(),
-                if (bEdit) _buildEdit()
+                if (!bRowLongPress && _audioHandler != null && songs.isNotEmpty)
+                  _buildPlayerControls(),
+                if (bRowLongPress) _buildCollectButton() // 新增或移除清單按鈕
               ]),
             );
           });
@@ -249,6 +288,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     if (loop == 1) {
       iconLoop = const Icon(Icons.repeat_one, color: Colors.white);
     } else if (loop == 10) {
+      iconLoop = const Icon(Icons.repeat_on, color: Colors.white);
+    } else  {
       iconLoop = const Icon(Icons.repeat, color: Colors.white);
     }
 
@@ -286,9 +327,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       if (loop == 0) {
                         loop = 1;
                         loopMode = LoopMode.one;
-                        // } else if(loop == 1) {
-                        //   loop = 10;
-                        //   mode = LoopMode.all;
+                      } else if (loop == 1) {
+                        loopMode = LoopMode.all;
+                        loop = 10;
                       } else {
                         loop = 0;
                       }
@@ -360,6 +401,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
   Widget _buildRow(int index, bool active) {
     MediaItem song = songs[index];
+
     var duration = "${song.duration}".split(".")[0];
     if (duration.startsWith("0:")) {
       duration = duration.substring(2);
@@ -370,7 +412,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         // decoration: BoxDecoration(
         //   border: Border.all(width: 1.0, color: Colors.white),
         // ),
-        child: active && !bEdit
+        child: active && !bRowLongPress
             ? const Icon(Icons.play_arrow, size: 20, color: Colors.white)
             : Text((index < 9 ? "0" : "") + (index + 1).toString(),
                 textAlign: TextAlign.center,
@@ -420,12 +462,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                     color: Colors.transparent,
                     child: InkWell(
                       onLongPress: () {
-                        if (bEdit == false) {
+                        if (bRowLongPress == false) {
                           onLongPress(index);
                         }
                       },
                       onTap: () {
-                        if (bEdit == false) {
+                        if (bRowLongPress == false) {
                           _audioHandler!.setSong(song);
                           _audioHandler!.play();
                         } else {}
@@ -435,7 +477,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                           child: Row(children: [
                             widget1,
                             Expanded(flex: 1, child: widget2),
-                            if (!bEdit)
+                            if (!bRowLongPress)
                               Padding(
                                   padding: const EdgeInsets.only(left: 2.0),
                                   child: Text(duration,
@@ -444,7 +486,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                                       // textDirection: TextDirection.ltr,
                                       style: const TextStyle(
                                           color: Colors.white, fontSize: 14))),
-                            if (bEdit && marked.contains("'$index'"))
+                            if (bRowLongPress && marked.contains("'$index'"))
                               IconButton(
                                 iconSize: 20,
                                 icon: const Icon(Icons.check_box_rounded,
@@ -454,7 +496,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                                   setState(() {});
                                 },
                               ),
-                            if (bEdit && !marked.contains("'$index'"))
+                            if (bRowLongPress && !marked.contains("'$index'"))
                               IconButton(
                                 iconSize: 20,
                                 icon: const Icon(
@@ -475,12 +517,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     _audioHandler!.stop();
     marked = "'$index'";
     if (mode == "Directory") {
-    } else {}
-    bEdit = true;
+    } else {
+    }
+    bRowLongPress = true;
     setState(() {});
   }
 
-  Widget _buildControls() {
+  Widget _buildPlayerControls() {
     return StreamBuilder<bool>(
       stream:
           _audioHandler!.playbackState.map((state) => state.playing).distinct(),
@@ -491,9 +534,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if(mode == "Collect")
+            if(mode == "Collect" && loop == 1 && bPosition == false)
               _button(Icons.add_location, () {
-                    // setState(() {});
+                bPosition = true;
+                setState(() {});
               }),
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
@@ -580,7 +624,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         });
   }
 
-  Widget _buildEdit() {
+  Widget _buildCollectButton() { // 新增或移除清單按鈕
     return Container(
       height: 60,
       // decoration: BoxDecoration(
@@ -591,17 +635,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (mode == "Directory" && marked.isNotEmpty)
-            _button(Icons.bookmark, addBookMark, visible: true),
+            _button(Icons.bookmark, addCollect, visible: true),
           if (mode != "Directory" && marked.isNotEmpty)
-            _button(Icons.content_cut, cut, visible: true),
+            _button(Icons.content_cut, removeCollect, visible: true),
           _button(Icons.undo, undo, visible: true),
         ],
       ),
     );
   }
 
-  addBookMark() async {
-    // 加入清單
+  addCollect() async { // 加入清單
     List<String> books = marked.split("''");
     List list = await Storage.getJsonList("Collects");
     if(list.isEmpty) {
@@ -631,7 +674,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               await Storage.setJsonList("Collects", list);
               // ignore: use_build_context_synchronously
               marked = "";
-              bEdit = false;
+              bRowLongPress = false;
               setState(() {});
               Navigator.of(context).pop();
             },
@@ -656,7 +699,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         });
   }
 
-  cut() async {
+  removeCollect() async { // 移除清單
     List list = await Storage.getJsonList("Collects");
     int index = list.indexWhere((el) => el["title"] == title);
     if (index != -1) {
@@ -680,7 +723,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
 
     marked = "";
-    bEdit = false;
+    bRowLongPress = false;
     setState(() {});
   }
 
@@ -704,14 +747,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
 
     marked = "";
-    bEdit = false;
+    bRowLongPress = false;
     initialDirectory();
     // _audioHandler!.init();
     setState(() {});
   }
 
   undo() {
-    bEdit = false;
+    bRowLongPress = false;
     marked = "";
     setState(() {});
   }
@@ -768,8 +811,17 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         }
       });
 
-      _player.processingStateStream.listen((state) {
-        if (state == ProcessingState.completed) skipToNext();
+      _player.processingStateStream.listen((state) async {
+        if (state == ProcessingState.completed) {
+          if (_player.loopMode == LoopMode.all) {
+            try {
+              await _platform.invokeListMethod("beep");
+            } on PlatformException catch (e) {
+              debugPrint("Failed: '${e.message}'.");
+            }
+          }
+          skipToNext();
+        }
       });
       bInitial = true;
     } else {
@@ -800,7 +852,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    _player.play();
+    if (history != null && (history['id'] is! String || history["id"] != currentSong.value.id)) {
+        history["id"] = currentSong.value.id;
+        history["start"] = null;
+        history["end"] = null;
+        Storage.setJson("history$mode", history);
+    }
+  }
 
   @override
   Future<void> pause() => _player.pause();

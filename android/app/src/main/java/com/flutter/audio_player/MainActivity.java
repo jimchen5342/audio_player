@@ -4,6 +4,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -20,6 +23,7 @@ import com.ryanheise.audioservice.AudioServiceActivity;
 public class MainActivity extends AudioServiceActivity { // FlutterActivity {
     public static EventChannel.EventSink eventSink;
     String TAG = "Player-Main";
+    private MediaPlayer mediaPlayer;
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -38,72 +42,51 @@ public class MainActivity extends AudioServiceActivity { // FlutterActivity {
     protected void onDestroy() {
         super.onDestroy();
         MainActivity.eventSink = null;
+        releaseMediaPlayer();
+    }
+
+    private void releaseMediaPlayer() {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    private void playBeepFromAssets(@NonNull MethodChannel.Result result) {
+        releaseMediaPlayer();
+        try {
+            AssetManager assetManager = getAssets();
+            AssetFileDescriptor afd = assetManager.openFd("beep.mp3");
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    releaseMediaPlayer();
+                }
+            });
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+            result.success("OK");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to play beep.mp3", e);
+            releaseMediaPlayer();
+            result.error("PLAY_FAILED", "Unable to play beep.mp3", e.getMessage());
+        }
     }
 
     MethodChannel.MethodCallHandler mMethodHandle = new MethodChannel.MethodCallHandler() {
         @Override
         public void onMethodCall(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
-            // if(call.method.equals("initial")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "initial");
-            //     String path = call.argument("path");
-            //     intent.putExtra("path", path);
-
-            //     String list = call.argument("list");
-            //     intent.putExtra("list", list);
-            //     // Log.i(TAG, path);
-            //     // Log.i(TAG, list);
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-            //     result.success("OK");
-            // }
-            // else if(call.method.equals("information")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "information");
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-            //     result.success("OK");
-            // }
-            // else if(call.method.equals("play")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "play");
-
-            //     String song = call.argument("song");
-            //     intent.putExtra("song", song);
-            //     // int position = all.argument("position");
-            //     // intent.putExtra("position", position);
-
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-            //     result.success("OK");
-            // }
-            // else if(call.method.equals("seek")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "seek");
-            //     int position = call.argument("position");
-            //     intent.putExtra("position", position);
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-
-            //     result.success("OK");
-            // }
-            // else if(call.method.equals("pause")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "pause");
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-            //     result.success("pause");
-            // }
-            // else if(call.method.equals("stop")) {
-            //     Intent intent = new Intent();
-            //     intent.putExtra("action", "stop");
-            //     intent.setClass(MainActivity.this, PlayerService.class);
-            //     startService(intent);
-            //     result.success("stop");
-            // } else {
-            //     result.notImplemented();
-            // }
-
+            if (call.method.equals("beep")) {
+                playBeepFromAssets(result);
+            } else {
+                result.notImplemented();
+            }
         }
     };
     EventChannel.StreamHandler mEnventHandle = new EventChannel.StreamHandler() {

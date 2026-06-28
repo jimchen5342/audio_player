@@ -3,6 +3,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class Storage {
+  static setJson(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString(key, jsonEncode(value));
+  }
+
+  static getJson(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    var s = prefs.getString(key) ??  "{}";
+    dynamic data = jsonDecode(s);
+    return data;
+  }
+
   static setJsonList(String key, List<dynamic> value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setString(key, jsonEncode(value));
