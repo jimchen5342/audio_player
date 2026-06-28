@@ -67,11 +67,12 @@ public class MainActivity extends AudioServiceActivity { // FlutterActivity {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     releaseMediaPlayer();
+                    result.success("OK");
                 }
             });
             mediaPlayer.prepare();
             mediaPlayer.start();
-            result.success("OK");
+            
         } catch (Exception e) {
             Log.e(TAG, "Failed to play beep.mp3", e);
             releaseMediaPlayer();

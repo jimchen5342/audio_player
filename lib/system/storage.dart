@@ -20,11 +20,29 @@ class Storage {
     prefs.setString(key, jsonEncode(value));
   }
 
-  static getJsonList(String key) async {
+  static Future<List<dynamic>> getJsonList(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    var s = prefs.getString(key) ??  "[]";
-    List<dynamic> dataList = jsonDecode(s);
-    return dataList;
+    var s = prefs.getString(key);
+    if (s == null || s.isEmpty) {
+      return [];
+    }
+
+    try {
+      final decoded = jsonDecode(s);
+      if (decoded is List<dynamic>) {
+        return decoded;
+      }
+      if (decoded is String) {
+        final inner = jsonDecode(decoded);
+        if (inner is List<dynamic>) {
+          return inner;
+        }
+      }
+    } catch (_) {
+      // ignore json decode errors and fall through to default
+    }
+
+    return [];
   }
 
   // 设置布尔的值

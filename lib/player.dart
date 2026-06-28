@@ -186,8 +186,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       _audioHandler!.init();
       if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
-      } else if (loop == 10) {
-        _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
+      // } else if (loop == 10) { // 不好用
+      //   _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
       }
       int index = 0;
       String? historyId;
@@ -327,9 +327,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       if (loop == 0) {
                         loop = 1;
                         loopMode = LoopMode.one;
-                      } else if (loop == 1) {
-                        loopMode = LoopMode.all;
-                        loop = 10;
+                      // } else if (loop == 1) {
+                      //   loopMode = LoopMode.all; // 不好用
+                      //   loop = 10;
                       } else {
                         loop = 0;
                       }
@@ -788,16 +788,36 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final currentPosition = BehaviorSubject<Duration>();
   int _oldSeconds = 0;
   bool bInitial = false;
+  bool _isLastSecond = false;
+
+  bool get isAtLastSecond => _isLastSecond;
 
   void init() async {
     currentPosition.add(Duration.zero);
     if (bInitial == false) {
       _player.playbackEventStream.listen(_broadcastState);
 
-      AudioService.position.listen((Duration position) {
+      AudioService.position.listen((Duration position) async {
         if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
+
+          final duration = currentSong.value.duration;
+          final lastSecond = duration != null && duration > Duration.zero
+              && position >= duration - const Duration(seconds: 1)
+              && position < duration;
+          // if (lastSecond && !_isLastSecond && _player.loopMode == LoopMode.all) {
+          //   pause();
+          //   try {
+          //     final String? result = await _platform.invokeMethod<String>("beep");
+          //     // print("beep: " + result);
+          //     skipToNext();
+          //     play();
+          //   } on PlatformException catch (e) {
+          //     debugPrint("Failed: '${e.message}'.");
+          //   }
+          // }
+          _isLastSecond = lastSecond;
 
           // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
           if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
@@ -813,13 +833,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
 
       _player.processingStateStream.listen((state) async {
         if (state == ProcessingState.completed) {
-          if (_player.loopMode == LoopMode.all) {
-            try {
-              await _platform.invokeListMethod("beep");
-            } on PlatformException catch (e) {
-              debugPrint("Failed: '${e.message}'.");
-            }
-          }
           skipToNext();
         }
       });
