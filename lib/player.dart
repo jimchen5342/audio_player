@@ -9,6 +9,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
@@ -59,6 +60,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     sleepTime = 30;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await EasyLoading.show(status: 'loading...');
       dynamic arg = ModalRoute.of(context)!.settings.arguments;
       title = arg["title"] as String; // 目錄名稱
       setState(() {});
@@ -70,21 +72,22 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
         String active = await Storage.getString("playDirectory");
         defaultSleepTime = await Storage.getInt("sleepTime");
-        history = await Storage.getJson("historyDirectory");
+        history = await Storage.getJson("history$mode");
         if(history['title'] is String && history['title'] != title) {
           history = {};
         }
         history['title'] = title;
-
-        if (songs.isEmpty || active != path) {
+        // if (songs.isEmpty || active != path) {
           songs = [];
           await initialDirectory();
           await Storage.setString("playDirectory", path);
-        }
+        // } else {
+        //   await EasyLoading.dismiss();
+        // }
       } else {
         mode = "Collect";
         loop = await Storage.getInt("loop$mode");
-        history = await Storage.getJson("historyCollect");
+        history = await Storage.getJson("history$mode");
         if(history['title'] is String && history['title'] != title) {
           history = {};
         }
@@ -174,6 +177,32 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
   Future<void> intitialAudio() async {
     if (songs.isNotEmpty) {
+      int index = -1, start = 0;
+      if(loop == 1) {
+        String? historyId;
+        if (history != null) {
+          if (history["id"] is String) {
+            historyId = history["id"] as String;
+          }
+        }
+        if (historyId != null) {
+          final found = songs.indexWhere((item) => item.id == historyId);
+          if (found != -1) {
+            index = found;
+          } else {
+            history["start"] = null;
+            history["end"] = null;
+          }
+        }
+
+        if(index > -1) {
+          history["start"] = 30;
+          history["end"] = 60;
+          if(history["start"] is num) {
+            start = history["start"];
+          }
+        }
+      }
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
         config: const AudioServiceConfig(
@@ -183,36 +212,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             androidNotificationOngoing: true,
             androidNotificationIcon: "mipmap/ic_launcher"),
       );
-      _audioHandler!.init();
+      _audioHandler!.init(index, start);
       if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
       // } else if (loop == 10) { // 不好用
       //   _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
       }
-      int index = 0;
-      String? historyId;
-      if (history != null) {
-        if (history['id'] is String) {
-          historyId = history['id'] as String;
-        }
-      }
-      if (historyId != null) {
-        final found = songs.indexWhere((item) => item.id == historyId);
-        if (found != -1) {
-          index = found;
-        } else {
-          history["start"] = null;
-          history["end"] = null;
-        }
-      }
-
-      if(index > 0) {
-        Timer(const Duration(milliseconds: 600), () {
-          MediaItem song = songs[index];
-          _audioHandler!.setSong(song);
-          if(index > 6) _animateToIndex(index);
-        });
-      }
+      EasyLoading.dismiss();
     }
   }
 
@@ -538,6 +544,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               _button(Icons.add_location, () {
                 bPosition = true;
                 setState(() {});
+                setupRange();
               }),
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
@@ -592,33 +599,45 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               .inSeconds
               .toDouble();
           Duration? duration = _audioHandler!.currentSong.value.duration;
-          final xx =
-              (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
+          final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
           if (currentPosition > xx) currentPosition = 0;
 
-          var str =
-              "-${Duration(seconds: (xx - currentPosition).toInt()).format()}"; // (xx - currentPosition) == 0 ? ""  :
+          var str1 =Duration(seconds: currentPosition.toInt()).format();
+          var str2 =Duration(seconds: (xx).toInt()).format(); // (x
 
           return Row(children: [
             Expanded(
-                flex: 1,
-                child: Slider(
-                  value: currentPosition,
-                  max: xx,
-                  // divisions: 5,
-                  // label: currentPosition.format(),
-                  onChanged: (double value) {
+              flex: 1,
+              child: Slider(
+                value: currentPosition,
+                max: xx,
+                // divisions: 5,
+                // label: currentPosition.format(),
+                onChanged: (double value) {
+                  if(!(loop == 1 && history["start"] is num && history["end"] is num)) {
                     setState(() {
                       _audioHandler!.seek(Duration(seconds: value.toInt()));
-                    });
-                  },
-                )),
-            // if(currentPosition > 0)
-            Text(str,
+                    });                    
+                  }
+                },
+              )),
+            Column(children: [
+              Text(str1,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                 )),
+              // const Divider(
+              //   color: Colors.orange,
+              //   height: 8,
+              //   thickness: 2,
+              // ),
+              Text(str2,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                )),
+            ],),
             const SizedBox(width: 5),
           ]);
         });
@@ -780,6 +799,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       );
     }
   }
+
+  void setupRange() {
+
+  }
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -788,11 +811,8 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   final currentPosition = BehaviorSubject<Duration>();
   int _oldSeconds = 0;
   bool bInitial = false;
-  bool _isLastSecond = false;
 
-  bool get isAtLastSecond => _isLastSecond;
-
-  void init() async {
+  void init(int index, int start) async {
     currentPosition.add(Duration.zero);
     if (bInitial == false) {
       _player.playbackEventStream.listen(_broadcastState);
@@ -801,23 +821,20 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
-
-          final duration = currentSong.value.duration;
-          final lastSecond = duration != null && duration > Duration.zero
-              && position >= duration - const Duration(seconds: 1)
-              && position < duration;
-          // if (lastSecond && !_isLastSecond && _player.loopMode == LoopMode.all) {
-          //   pause();
-          //   try {
-          //     final String? result = await _platform.invokeMethod<String>("beep");
-          //     // print("beep: " + result);
-          //     skipToNext();
-          //     play();
-          //   } on PlatformException catch (e) {
-          //     debugPrint("Failed: '${e.message}'.");
-          //   }
-          // }
-          _isLastSecond = lastSecond;
+          if (_player.loopMode == LoopMode.one && history["start"] is num && history["end"] is num) {
+            if(position.inSeconds >= history["end"]){
+              await pause();
+              await seek(Duration(seconds: history["start"]));
+              try {
+                await Future.delayed(const Duration(seconds: 1));
+                final String? result = await _platform.invokeMethod<String>("beep");
+                await Future.delayed(const Duration(seconds: 2));
+                play();
+              } on PlatformException catch (e) {
+                debugPrint("Failed: '${e.message}'.");
+              }
+            }
+          }
 
           // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
           if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
@@ -842,9 +859,17 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
       queue.value.clear();
     }
     queue.add(songs);
-
     if (songs.isNotEmpty) {
-      setSong(songs.first);
+      if(index == -1) {
+        setSong(songs.first);
+      } else {
+        setSong(songs[index]);
+        if(start is int) {
+          Timer(const Duration(milliseconds: 600), () async {
+            await _player.seek(Duration(seconds: start));
+          });
+        }
+      }
     }
   }
 
@@ -867,11 +892,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> play() async {
     _player.play();
-    if (history != null && (history['id'] is! String || history["id"] != currentSong.value.id)) {
+    if (history["id"] is! String || history["id"] != currentSong.value.id) {
         history["id"] = currentSong.value.id;
         history["start"] = null;
         history["end"] = null;
-        Storage.setJson("history$mode", history);
+        await Storage.setJson("history$mode", history);
     }
   }
 
