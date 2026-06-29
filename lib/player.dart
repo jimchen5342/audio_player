@@ -27,14 +27,14 @@ class Player extends StatefulWidget {
 
 class _PlayerState extends State<Player> with WidgetsBindingObserver {
   String title = "", path = "", marked = "";
-  bool isReady = false, bRowLongPress = false, dirty = false, bPosition = false;
+  bool isReady = false, bRowLongPress = false, dirty = false;
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
   
 
   Widget _button(IconData iconData, VoidCallback onPressed,
-      {bool visible = true}) {
+      {bool visible = true, active = false}) {
     return Container(
       width: 50,
       height: 50,
@@ -45,7 +45,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       child: IconButton(
         color: Colors.white,
         icon: Icon(iconData,
-          color: visible ? Colors.white : Colors.grey,
+          color: active ? Colors.deepOrangeAccent : (visible ? Colors.white : Colors.grey),
           size: visible ? 30 : 20),
         onPressed: visible ? onPressed : null,
       ) // visible ? btn : null
@@ -196,8 +196,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         }
 
         if(index > -1) {
-          history["start"] = 30;
-          history["end"] = 60;
           if(history["start"] is num) {
             start = history["start"];
           }
@@ -540,12 +538,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if(mode == "Collect" && loop == 1 && bPosition == false)
+            if(mode == "Collect" && loop == 1)
               _button(Icons.add_location, () {
-                bPosition = true;
-                setState(() {});
                 setupRange();
-              }),
+              }, active: history["start"] is num),
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
                 visible: queueIndex > 0),
@@ -801,7 +797,230 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   void setupRange() {
+    _audioHandler!.pause();
+    final int? startInitial = history["start"] is num
+        ? (history["start"] as num).toInt()
+        : null;
+    final int? endInitial = history["end"] is num
+        ? (history["end"] as num).toInt()
+        : null;
+    final Duration currentDuration =
+        _audioHandler?.currentSong.value.duration ?? Duration.zero;
+    final int durationSeconds = currentDuration.inSeconds;
+    final String durationHint =
+        '${durationSeconds ~/ 60}:${(durationSeconds % 60).toString().padLeft(2, '0')}';
 
+    final startMinuteController = TextEditingController();
+    final startSecondController = TextEditingController();
+    final endMinuteController = TextEditingController();
+    final endSecondController = TextEditingController();
+
+    if (startInitial != null) {
+      startMinuteController.text = (startInitial ~/ 60).toString();
+      startSecondController.text = (startInitial % 60).toString();
+    }
+    if (endInitial != null) {
+      endMinuteController.text = (endInitial ~/ 60).toString();
+      endSecondController.text = (endInitial % 60).toString();
+    }
+
+    bool canConfirm() {
+      if (startMinuteController.text.isEmpty &&
+          startSecondController.text.isEmpty &&
+          endMinuteController.text.isEmpty &&
+          endSecondController.text.isEmpty) {
+        return false;
+      }
+      final int start = (int.tryParse(startMinuteController.text) ?? 0) * 60 +
+          (int.tryParse(startSecondController.text) ?? 0);
+      final int end = (int.tryParse(endMinuteController.text) ?? 0) * 60 +
+          (int.tryParse(endSecondController.text) ?? 0);
+      if (startInitial == null && endInitial == null) {
+        return start != 0 || end != 0;
+      }
+      return start != (startInitial ?? 0) || end != (endInitial ?? 0);
+    }
+
+    showDialog<void>(
+      context: context,
+      // barrierDismissible: true,
+      barrierDismissible: false, // 使用者必須點按鈕關閉
+      builder: (BuildContext context) {
+        bool confirmedEnabled = canConfirm();
+        String? errorText;
+
+        void updateState(VoidCallback fn) {
+          fn();
+          confirmedEnabled = canConfirm();
+        }
+
+        return StatefulBuilder(builder: (context, setDialogState) {
+          void onFieldChanged() {
+            setDialogState(() {
+              confirmedEnabled = canConfirm();
+              errorText = null;
+            });
+          }
+
+          return AlertDialog(
+            title: const Text('設定播放範圍'),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(5.0)),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('開始時間'),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: startMinuteController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: const InputDecoration(
+                          hintText: '0',
+                          labelText: '分',
+                        ),
+                        onChanged: (_) => onFieldChanged(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: startSecondController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: const InputDecoration(
+                          hintText: '0',
+                          labelText: '秒',
+                        ),
+                        onChanged: (_) => onFieldChanged(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('結束時間'),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: endMinuteController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: InputDecoration(
+                          hintText: durationSeconds > 0
+                              ? '${durationSeconds ~/ 60}'
+                              : '0',
+                          labelText: '分',
+                        ),
+                        onChanged: (_) => onFieldChanged(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: endSecondController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: InputDecoration(
+                          hintText: durationSeconds > 0
+                              ? '${durationSeconds % 60}'
+                              : '0',
+                          labelText: '秒',
+                        ),
+                        onChanged: (_) => onFieldChanged(),
+                      ),
+                    ),
+                  ],
+                ),
+                if (durationSeconds > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '歌曲長度：$durationHint',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                if (errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      errorText!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              if (history['start'] is num)
+                TextButton(
+                  onPressed: () async {
+                    history['start'] = null;
+                    history['end'] = null;
+                    await Storage.setJson('history$mode', history);
+                    Navigator.of(context).pop();
+                    setState(() {});
+                  },
+                  child: const Text('移除'),
+                ),
+              ElevatedButton(
+                onPressed: confirmedEnabled
+                    ? () async {
+                        final int start =
+                            (int.tryParse(startMinuteController.text) ?? 0) *
+                                60 +
+                                (int.tryParse(startSecondController.text) ?? 0);
+                        final int end =
+                            (int.tryParse(endMinuteController.text) ?? 0) *
+                                60 +
+                                (int.tryParse(endSecondController.text) ?? 0);
+                        if (end <= start + 10) {
+                          setDialogState(() {
+                            errorText = '結束時間需大於開始時間 10 秒';
+                          });
+                          return;
+                        }
+                        if (durationSeconds > 0 && end > durationSeconds) {
+                          setDialogState(() {
+                            errorText = '結束時間不得大於歌曲長度';
+                          });
+                          return;
+                        }
+                        history['start'] = start;
+                        history['end'] = end;
+                        await Storage.setJson('history$mode', history);
+                        Navigator.of(context).pop();
+                        _audioHandler!.seek(Duration(seconds: start));
+                        setState(() {});
+                      }
+                    : null,
+                child: const Text('確定'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('關閉'),
+              ),              
+            ],
+          );
+        });
+      },
+    );
   }
 }
 
@@ -824,11 +1043,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
           if (_player.loopMode == LoopMode.one && history["start"] is num && history["end"] is num) {
             if(position.inSeconds >= history["end"]){
               await pause();
-              await seek(Duration(seconds: history["start"]));
               try {
                 await Future.delayed(const Duration(seconds: 1));
                 final String? result = await _platform.invokeMethod<String>("beep");
-                await Future.delayed(const Duration(seconds: 2));
+                await seek(Duration(seconds: history["start"]));
+                await Future.delayed(const Duration(seconds: 3));
                 play();
               } on PlatformException catch (e) {
                 debugPrint("Failed: '${e.message}'.");
