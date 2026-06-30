@@ -808,42 +808,40 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         _audioHandler?.currentSong.value.duration ?? Duration.zero;
     final int durationSeconds = currentDuration.inSeconds;
     final String durationHint =
-        '${durationSeconds ~/ 60}:${(durationSeconds % 60).toString().padLeft(2, '0')}';
+        '${(durationSeconds ~/ 60).toString().padLeft(2, '0')}:${(durationSeconds % 60).toString().padLeft(2, '0')}';
 
-    final startMinuteController = TextEditingController();
     final startSecondController = TextEditingController();
-    final endMinuteController = TextEditingController();
     final endSecondController = TextEditingController();
 
     if (startInitial != null) {
-      startMinuteController.text = (startInitial ~/ 60).toString();
-      startSecondController.text = (startInitial % 60).toString();
+      startSecondController.text = startInitial.toString();
     }
     if (endInitial != null) {
-      endMinuteController.text = (endInitial ~/ 60).toString();
-      endSecondController.text = (endInitial % 60).toString();
+      endSecondController.text = endInitial.toString();
     }
 
     bool canConfirm() {
-      if (startMinuteController.text.isEmpty &&
-          startSecondController.text.isEmpty &&
-          endMinuteController.text.isEmpty &&
+      if (startSecondController.text.isEmpty &&
           endSecondController.text.isEmpty) {
         return false;
       }
-      final int start = (int.tryParse(startMinuteController.text) ?? 0) * 60 +
-          (int.tryParse(startSecondController.text) ?? 0);
-      final int end = (int.tryParse(endMinuteController.text) ?? 0) * 60 +
-          (int.tryParse(endSecondController.text) ?? 0);
+      final int start = int.tryParse(startSecondController.text) ?? 0;
+      final int end = int.tryParse(endSecondController.text) ?? 0;
       if (startInitial == null && endInitial == null) {
         return start != 0 || end != 0;
       }
       return start != (startInitial ?? 0) || end != (endInitial ?? 0);
     }
 
+    String formatSeconds(String secondsStr) {
+      final int seconds = int.tryParse(secondsStr) ?? 0;
+      final int minutes = seconds ~/ 60;
+      final int secs = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+
     showDialog<void>(
       context: context,
-      // barrierDismissible: true,
       barrierDismissible: false, // 使用者必須點按鈕關閉
       builder: (BuildContext context) {
         bool confirmedEnabled = canConfirm();
@@ -863,80 +861,76 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           }
 
           return AlertDialog(
-            title: const Text('設定播放範圍'),
+            title: const Text('設定播放範圍',
+              // style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(5.0)),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('開始時間'),
-                ),
                 Row(
                   children: [
+                    const Text('開始時間：',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                     Expanded(
                       child: TextField(
-                        controller: startMinuteController,
+                        controller: startSecondController,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: const InputDecoration(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        decoration: InputDecoration(
                           hintText: '0',
-                          labelText: '分',
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixText: '秒',
                         ),
                         onChanged: (_) => onFieldChanged(),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextField(
-                        controller: startSecondController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: const InputDecoration(
-                          hintText: '0',
-                          labelText: '秒',
+                      child: Center(
+                        child: Text(
+                          formatSeconds(startSecondController.text),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        onChanged: (_) => onFieldChanged(),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('結束時間'),
-                ),
                 Row(
                   children: [
+                    const Text('結束時間：',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                     Expanded(
                       child: TextField(
-                        controller: endMinuteController,
+                        controller: endSecondController,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
                         decoration: InputDecoration(
-                          hintText: durationSeconds > 0
-                              ? '${durationSeconds ~/ 60}'
-                              : '0',
-                          labelText: '分',
+                          hintText: '$durationSeconds',
+                          // hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixText: '秒',
                         ),
                         onChanged: (_) => onFieldChanged(),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextField(
-                        controller: endSecondController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: InputDecoration(
-                          hintText: durationSeconds > 0
-                              ? '${durationSeconds % 60}'
-                              : '0',
-                          labelText: '秒',
+                      child: Center(
+                        child: Text(
+                          formatSeconds(endSecondController.text),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        onChanged: (_) => onFieldChanged(),
                       ),
                     ),
                   ],
@@ -949,7 +943,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       child: Text(
                         '歌曲長度：$durationHint',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -960,7 +955,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       errorText!,
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w600,),
                     ),
                   ),
               ],
@@ -968,6 +963,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
             actions: [
               if (history['start'] is num)
                 TextButton(
+                  style: TextButton.styleFrom(
+                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
                   onPressed: () async {
                     history['start'] = null;
                     history['end'] = null;
@@ -978,16 +976,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   child: const Text('移除'),
                 ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 onPressed: confirmedEnabled
                     ? () async {
-                        final int start =
-                            (int.tryParse(startMinuteController.text) ?? 0) *
-                                60 +
-                                (int.tryParse(startSecondController.text) ?? 0);
-                        final int end =
-                            (int.tryParse(endMinuteController.text) ?? 0) *
-                                60 +
-                                (int.tryParse(endSecondController.text) ?? 0);
+                        final int start = int.tryParse(startSecondController.text) ?? 0;
+                        final int end = int.tryParse(endSecondController.text) ?? 0;
                         if (end <= start + 10) {
                           setDialogState(() {
                             errorText = '結束時間需大於開始時間 10 秒';
@@ -1011,6 +1006,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                 child: const Text('確定'),
               ),
               TextButton(
+                style: TextButton.styleFrom(
+                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
