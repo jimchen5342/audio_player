@@ -417,6 +417,44 @@ class _HomeState extends State<Home> {
     );
   }
 
+  showDirectoryFiles(String path) async {
+    Archive archive = Archive();
+    List<String> files = await archive.getFiles(path);
+
+    Widget listview = Container(
+      width: 310.0,
+      height: 400.0,
+      child: files.isEmpty
+          ? const Center(child: Text('沒有可顯示的檔案', style: TextStyle(fontSize: 16)))
+          : ListView.builder(
+              shrinkWrap: true,
+              itemCount: files.length,
+              itemBuilder: (BuildContext context, int index) {
+                return ListTile(
+                  title: Text(files[index]),
+                );
+              },
+            ),
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('檔案清單'),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
+          content: listview,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('關閉'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   delBlackList(index) async {
     List arr = listBlackList[index].split("/");
     int count = 0;
@@ -455,9 +493,9 @@ class _HomeState extends State<Home> {
                 child: Material(
                   color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
                   child: InkWell (
-                    onLongPress: () {
+                    onLongPress: () async {
                       if(activeBar == 0) {
-                        alert(list[index]["path"]);
+                        await showDirectoryFiles(list[index]["path"]);
                       }
                     },
                     onTap: () async {

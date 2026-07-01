@@ -8,8 +8,6 @@ import 'package:audio_player/system/module.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
@@ -31,25 +29,26 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   int defaultSleepTime = 0, loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
-  
 
   Widget _button(IconData iconData, VoidCallback onPressed,
       {bool visible = true, active = false}) {
     return Container(
-      width: 50,
-      height: 50,
-      // decoration: BoxDecoration(
-      //   border: Border.all(color: Colors.blueAccent),
-      //   borderRadius: BorderRadius.circular(10),
-      // ),
-      child: IconButton(
-        color: Colors.white,
-        icon: Icon(iconData,
-          color: active ? Colors.deepOrangeAccent : (visible ? Colors.white : Colors.grey),
-          size: visible ? 30 : 20),
-        onPressed: visible ? onPressed : null,
-      ) // visible ? btn : null
-    );
+        width: 50,
+        height: 50,
+        // decoration: BoxDecoration(
+        //   border: Border.all(color: Colors.blueAccent),
+        //   borderRadius: BorderRadius.circular(10),
+        // ),
+        child: IconButton(
+          color: Colors.white,
+          icon: Icon(iconData,
+              color: active
+                  ? Colors.deepOrangeAccent
+                  : (visible ? Colors.white : Colors.grey),
+              size: visible ? 30 : 20),
+          onPressed: visible ? onPressed : null,
+        ) // visible ? btn : null
+        );
   }
 
   @override
@@ -73,14 +72,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         String active = await Storage.getString("playDirectory");
         defaultSleepTime = await Storage.getInt("sleepTime");
         history = await Storage.getJson("history$mode");
-        if(history['title'] is String && history['title'] != title) {
+        if (history['title'] is String && history['title'] != title) {
           history = {};
         }
         history['title'] = title;
         // if (songs.isEmpty || active != path) {
-          songs = [];
-          await initialDirectory();
-          await Storage.setString("playDirectory", path);
+        songs = [];
+        await initialDirectory();
+        await Storage.setString("playDirectory", path);
         // } else {
         //   await EasyLoading.dismiss();
         // }
@@ -88,7 +87,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         mode = "Collect";
         loop = await Storage.getInt("loop$mode");
         history = await Storage.getJson("history$mode");
-        if(history['title'] is String && history['title'] != title) {
+        if (history['title'] is String && history['title'] != title) {
           history = {};
         }
         history['title'] = title;
@@ -120,7 +119,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     return title;
   }
 
-  Future<void> initialDirectory() async { // 資料夾
+  Future<void> initialDirectory() async {
+    // 資料夾
     String root = await Archive.root();
     Archive archive = Archive();
     List<String> list = await archive.getFiles(path);
@@ -155,7 +155,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     return;
   }
 
-  Future<void> initialCollect(List datas) async { // 清單
+  Future<void> initialCollect(List datas) async {
+    // 清單
     // datas.sort();
     final player = AudioPlayer();
     for (var i = 0; i < datas.length; i++) {
@@ -178,7 +179,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   Future<void> intitialAudio() async {
     if (songs.isNotEmpty) {
       int index = -1, start = 0;
-      if(loop == 1) {
+      if (loop == 1) {
         String? historyId;
         if (history != null) {
           if (history["id"] is String) {
@@ -195,8 +196,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           }
         }
 
-        if(index > -1) {
-          if(history["start"] is num) {
+        if (index > -1) {
+          if (history["start"] is num) {
             start = history["start"];
           }
         }
@@ -213,8 +214,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       _audioHandler!.init(index, start);
       if (loop == 1) {
         _audioHandler!.setLoopMode(LoopMode.one); // 0 off/1 one/10 all
-      // } else if (loop == 10) { // 不好用
-      //   _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
+        // } else if (loop == 10) { // 不好用
+        //   _audioHandler!.setLoopMode(LoopMode.all); // 0 off/1 one/10 all
       }
       EasyLoading.dismiss();
     }
@@ -293,7 +294,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       iconLoop = const Icon(Icons.repeat_one, color: Colors.white);
     } else if (loop == 10) {
       iconLoop = const Icon(Icons.repeat_on, color: Colors.white);
-    } else  {
+    } else {
       iconLoop = const Icon(Icons.repeat, color: Colors.white);
     }
 
@@ -331,13 +332,14 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       if (loop == 0) {
                         loop = 1;
                         loopMode = LoopMode.one;
-                      // } else if (loop == 1) {
-                      //   loopMode = LoopMode.all; // 不好用
-                      //   loop = 10;
+                        // } else if (loop == 1) {
+                        //   loopMode = LoopMode.all; // 不好用
+                        //   loop = 10;
                       } else {
                         loop = 0;
                       }
-                      _audioHandler!.setLoopMode(loopMode); // 0 off/1 one/10 all
+                      _audioHandler!
+                          .setLoopMode(loopMode); // 0 off/1 one/10 all
                       await Storage.setInt("loop$mode", loop);
                       setState(() {});
                     },
@@ -521,8 +523,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     _audioHandler!.stop();
     marked = "'$index'";
     if (mode == "Directory") {
-    } else {
-    }
+    } else {}
     bRowLongPress = true;
     setState(() {});
   }
@@ -538,10 +539,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if(mode == "Collect" && loop == 1)
-              _button(Icons.add_location, () {
+            if (mode == "Collect" && loop == 1 && history["title"] == "日語") // "日語" 目錄才有下載功能
+              _button(
+                  history["start"] is num
+                      ? Icons.cloud_download
+                      : Icons.cloud_download_outlined, () {
+                donwloadLRC();
+              }, active: history["start"] is num),
+            if(mode == "Collect" && loop == 1 && history["title"] != "日語")
+              _button(history["start"] is num
+                ? Icons.add_location : Icons.add_location_outlined,
+                () {
                 setupRange();
               }, active: history["start"] is num),
+
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
                 visible: queueIndex > 0),
@@ -574,17 +585,17 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
   Widget _buildSpendTime() {
     return StreamBuilder<Duration>(
-      stream: _audioHandler!.currentPosition,
-      builder: (context, snapshot) {
-        int sub = (sleepTime * 60) - spendSeconds;
-        String total = "-${Duration(seconds: sub).format()}";
+        stream: _audioHandler!.currentPosition,
+        builder: (context, snapshot) {
+          int sub = (sleepTime * 60) - spendSeconds;
+          String total = "-${Duration(seconds: sub).format()}";
 
-        return Text(total,
-            style: const TextStyle(
-              color: Colors.orange,
-              fontSize: 18,
-            ));
-      });
+          return Text(total,
+              style: const TextStyle(
+                color: Colors.orange,
+                fontSize: 18,
+              ));
+        });
   }
 
   Widget _buildSlider() {
@@ -595,51 +606,57 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               .inSeconds
               .toDouble();
           Duration? duration = _audioHandler!.currentSong.value.duration;
-          final xx = (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
+          final xx =
+              (duration ?? const Duration(seconds: 0)).inSeconds.toDouble();
           if (currentPosition > xx) currentPosition = 0;
 
-          var str1 =Duration(seconds: currentPosition.toInt()).format();
-          var str2 =Duration(seconds: (xx).toInt()).format(); // (x
+          var str1 = Duration(seconds: currentPosition.toInt()).format();
+          var str2 = Duration(seconds: (xx).toInt()).format(); // (x
 
           return Row(children: [
             Expanded(
-              flex: 1,
-              child: Slider(
-                value: currentPosition,
-                max: xx,
-                // divisions: 5,
-                // label: currentPosition.format(),
-                onChanged: (double value) {
-                  if(!(loop == 1 && history["start"] is num && history["end"] is num)) {
-                    setState(() {
-                      _audioHandler!.seek(Duration(seconds: value.toInt()));
-                    });                    
-                  }
-                },
-              )),
-            Column(children: [
-              Text(str1,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+                flex: 1,
+                child: Slider(
+                  value: currentPosition,
+                  max: xx,
+                  // divisions: 5,
+                  // label: currentPosition.format(),
+                  onChanged: (double value) {
+                    if (!(loop == 1 &&
+                        history["start"] is num &&
+                        history["end"] is num)) {
+                      setState(() {
+                        _audioHandler!.seek(Duration(seconds: value.toInt()));
+                      });
+                    }
+                  },
                 )),
-              // const Divider(
-              //   color: Colors.orange,
-              //   height: 8,
-              //   thickness: 2,
-              // ),
-              Text(str2,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                )),
-            ],),
+            Column(
+              children: [
+                Text(str1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                    )),
+                // const Divider(
+                //   color: Colors.orange,
+                //   height: 8,
+                //   thickness: 2,
+                // ),
+                Text(str2,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                    )),
+              ],
+            ),
             const SizedBox(width: 5),
           ]);
         });
   }
 
-  Widget _buildCollectButton() { // 新增或移除清單按鈕
+  Widget _buildCollectButton() {
+    // 新增或移除清單按鈕
     return Container(
       height: 60,
       // decoration: BoxDecoration(
@@ -659,10 +676,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     );
   }
 
-  addCollect() async { // 加入清單
+  addCollect() async {
+    // 加入清單
     List<String> books = marked.split("''");
     List list = await Storage.getJsonList("Collects");
-    if(list.isEmpty) {
+    if (list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
       list.add({"title": "英語", "datas": []});
       list.add({"title": "日語", "datas": []});
@@ -714,7 +732,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         });
   }
 
-  removeCollect() async { // 移除清單
+  removeCollect() async {
+    // 移除清單
     List list = await Storage.getJsonList("Collects");
     int index = list.indexWhere((el) => el["title"] == title);
     if (index != -1) {
@@ -796,14 +815,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
   }
 
-  void setupRange() {
+  void setupRange() { // 設定播放範圍
     _audioHandler!.pause();
-    final int? startInitial = history["start"] is num
-        ? (history["start"] as num).toInt()
-        : null;
-    final int? endInitial = history["end"] is num
-        ? (history["end"] as num).toInt()
-        : null;
+    history["id"] = _audioHandler?.currentSong.value.id;
+    final int? startInitial =
+        history["start"] is num ? (history["start"] as num).toInt() : null;
+    final int? endInitial =
+        history["end"] is num ? (history["end"] as num).toInt() : null;
     final Duration currentDuration =
         _audioHandler?.currentSong.value.duration ?? Duration.zero;
     final int durationSeconds = currentDuration.inSeconds;
@@ -861,7 +879,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           }
 
           return AlertDialog(
-            title: const Text('設定播放範圍',
+            title: const Text(
+              '設定播放範圍',
               // style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             shape: const RoundedRectangleBorder(
@@ -872,9 +891,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               children: [
                 Row(
                   children: [
-                    const Text('開始時間：',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                    const Text(
+                      '開始時間：',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                     Expanded(
                       child: TextField(
                         controller: startSecondController,
@@ -896,7 +917,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       child: Center(
                         child: Text(
                           formatSeconds(startSecondController.text),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -905,8 +927,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('結束時間：',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    const Text(
+                      '結束時間：',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     Expanded(
                       child: TextField(
@@ -929,7 +953,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                       child: Center(
                         child: Text(
                           formatSeconds(endSecondController.text),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -955,7 +980,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       errorText!,
-                      style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w600,),
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
               ],
@@ -964,7 +993,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               if (history['start'] is num)
                 TextButton(
                   style: TextButton.styleFrom(
-                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   onPressed: () async {
                     history['start'] = null;
@@ -977,12 +1007,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                 ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  textStyle: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 onPressed: confirmedEnabled
                     ? () async {
-                        final int start = int.tryParse(startSecondController.text) ?? 0;
-                        final int end = int.tryParse(endSecondController.text) ?? 0;
+                        final int start =
+                            int.tryParse(startSecondController.text) ?? 0;
+                        final int end =
+                            int.tryParse(endSecondController.text) ?? 0;
                         if (end <= start + 10) {
                           setDialogState(() {
                             errorText = '結束時間需大於開始時間 10 秒';
@@ -1007,18 +1040,240 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               ),
               TextButton(
                 style: TextButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  textStyle: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
                 child: const Text('關閉'),
-              ),              
+              ),
             ],
           );
         });
       },
     );
+  }
+
+  Future<void> donwloadLRC() async { // 下載 LRC
+    _audioHandler?.pause();
+    history["id"] = _audioHandler?.currentSong.value.id;
+    final String songTitle = _audioHandler?.currentSong.value.title ?? '';
+    final int start = songTitle.indexOf('-');
+    final String title2 =
+        start == -1 ? songTitle.trim() : songTitle.substring(0, start).trim();
+    int indexStart = -1, indexEnd = -1;
+
+    final String url =
+        'https://jimchen5342.github.io/japan/大家的日本語/${Uri.encodeComponent(title2)}.json';
+
+    final client = HttpClient();
+    try {
+      await EasyLoading.show(status: '下載中...');
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != HttpStatus.ok) {
+        throw Exception('下載失敗: ${response.statusCode}');
+      }
+
+      final body = await response.transform(utf8.decoder).join();
+      final decoded = jsonDecode(body);
+      if (decoded is! List) {
+        throw Exception('資料格式錯誤');
+      }
+
+      final items = decoded
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+
+      if (!mounted) return;
+
+      if(history["start"] is num && history["end"] is num) {
+        final int startHistory = history["start"];
+        final int endHistory = history["end"];
+        for(int i = 0; i < items.length; i++) {
+          final item = items[i];
+          int startItem = item['start'] is num ? item['start'] as int : 0;
+          int endItem = item['end'] is num 
+            ? item['end'] as int 
+            : (items[i + 1]['start'] as int) - 1;
+          
+          if(indexStart == -1 && startItem >= startHistory) {
+            indexStart = i;
+          } else if(endItem <= endHistory) {
+            indexEnd = i;
+          } else {
+            break;
+          }
+        }
+      }
+
+      await EasyLoading.dismiss();
+
+      int dialogIndexStart = indexStart;
+      int dialogIndexEnd = indexEnd;
+      final ScrollController lrcListController = ScrollController();
+
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          final screenSize = MediaQuery.of(context).size;
+          final dialogWidth = screenSize.width;
+          final dialogHeight = screenSize.height - 40;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (indexStart > -1 && lrcListController.hasClients) {
+              final maxScrollExtent = lrcListController.position.maxScrollExtent;
+              final targetOffset = (indexStart * 56.0).clamp(0.0, maxScrollExtent);
+              lrcListController.animateTo(
+                targetOffset,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: Text('$title2'),
+                content: SizedBox(
+                  width: dialogWidth,
+                  height: dialogHeight,
+                  child: items.isEmpty
+                      ? const Center(child: Text('沒有找到資料'))
+                      : ListView.separated(
+                          controller: lrcListController,
+                          itemCount: items.length,
+                          // itemExtent: 56,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final String id = item['id']?.toString() ?? '';
+                            final String kana = item['kana']?.toString() ?? '';
+                            final String displayTitle =
+                                id.isEmpty ? kana : '$id. $kana';
+
+                            final bool inRange =
+                                dialogIndexStart != -1 &&
+                                dialogIndexEnd != -1 &&
+                                index >= dialogIndexStart &&
+                                index <= dialogIndexEnd;
+
+                            final num? startValue = item['start'] is num
+                                ? item['start'] as num
+                                : num.tryParse(item['start']?.toString() ?? '');
+                            final int startSeconds = startValue?.toInt() ?? 0;
+                            final String displayStart =
+                                '${(startSeconds ~/ 60).toString().padLeft(2, '0')}:${(startSeconds % 60).toString().padLeft(2, '0')}';
+
+                            return ListTile(
+                              onTap: () {
+                                setDialogState(() {
+                                  if (dialogIndexStart == -1) {
+                                    dialogIndexStart = index;
+                                    dialogIndexEnd = index;
+                                  } else if (index > dialogIndexEnd) {
+                                    dialogIndexEnd = index;
+                                  } else if (index < dialogIndexStart) {
+                                    dialogIndexStart = index;
+                                  } else {
+                                    dialogIndexStart = -1;
+                                    dialogIndexEnd = -1;
+                                  }
+                                });
+                              },
+                              // tileColor: inRange ? Colors.deepOrangeAccent : null,
+                              // textColor: inRange ? Colors.white : null,
+                              // iconColor: inRange ? Colors.white : null,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2, vertical: 2),
+                              title: Text(
+                                displayTitle,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: inRange ? Colors.deepOrangeAccent : null,
+                                ),
+                              ),
+                              trailing: Text(
+                                displayStart,
+                                style: TextStyle(
+                                  color: inRange ? Colors.deepOrangeAccent : Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                actions: [
+                  if(indexStart != -1 && indexEnd != -1)
+                    TextButton(
+                      onPressed: () async {
+                        
+                        history["start"] = null;
+                        history["end"] = null;
+                        await Storage.setJson("history$mode", history);
+                        _audioHandler!.seek(const Duration(seconds: 0));
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('取消', style: TextStyle(color: Colors.red)),
+                    ),
+                  if(dialogIndexStart != indexStart || dialogIndexEnd != indexEnd)
+                    TextButton(
+                      onPressed: () async {
+                        int startValue = 0;
+                        if(dialogIndexStart == -1 || dialogIndexEnd == -1) {
+                          history["start"] = null;
+                          history["end"] = null;
+                        } else {
+                          startValue = items[dialogIndexStart]["start"] is num
+                              ? items[dialogIndexStart]["start"] as int
+                              : 0;
+                          history["start"] = startValue;
+                          int endValue = items[dialogIndexEnd]["end"] is num
+                              ? items[dialogIndexEnd]["end"] as int
+                              : (items[dialogIndexEnd + 1]["start"] as int) - 1;
+                          history["end"] = endValue;
+                        }
+
+                        await Storage.setJson("history$mode", history);
+                        _audioHandler!.seek(Duration(seconds: startValue));
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('確定'),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('關閉', style: TextStyle(color: Colors.green)),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await EasyLoading.dismiss();
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('下載失敗'),
+            content: Text(error.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('關閉'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      client.close();
+    }
   }
 }
 
@@ -1038,12 +1293,15 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
-          if (_player.loopMode == LoopMode.one && history["start"] is num && history["end"] is num) {
-            if(position.inSeconds >= history["end"]){
+          if (_player.loopMode == LoopMode.one &&
+              history["start"] is num &&
+              history["end"] is num) {
+            if (position.inSeconds >= history["end"]) {
               await pause();
               try {
                 await Future.delayed(const Duration(seconds: 1));
-                final String? result = await _platform.invokeMethod<String>("beep");
+                final String? result =
+                    await _platform.invokeMethod<String>("beep");
                 await seek(Duration(seconds: history["start"]));
                 await Future.delayed(const Duration(seconds: 3));
                 play();
@@ -1077,11 +1335,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     }
     queue.add(songs);
     if (songs.isNotEmpty) {
-      if(index == -1) {
+      if (index == -1) {
         setSong(songs.first);
       } else {
         setSong(songs[index]);
-        if(start is int) {
+        if (start is int) {
           Timer(const Duration(milliseconds: 600), () async {
             await _player.seek(Duration(seconds: start));
           });
@@ -1110,10 +1368,10 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> play() async {
     _player.play();
     if (history["id"] is! String || history["id"] != currentSong.value.id) {
-        history["id"] = currentSong.value.id;
-        history["start"] = null;
-        history["end"] = null;
-        await Storage.setJson("history$mode", history);
+      history["id"] = currentSong.value.id;
+      history["start"] = null;
+      history["end"] = null;
+      await Storage.setJson("history$mode", history);
     }
   }
 
