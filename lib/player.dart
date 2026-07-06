@@ -26,7 +26,7 @@ class Player extends StatefulWidget {
 class _PlayerState extends State<Player> with WidgetsBindingObserver {
   String title = "", path = "", marked = "";
   bool isReady = false, bRowLongPress = false, dirty = false;
-  int defaultSleepTime = 0, loop = 0;
+  int loop = 0;
   final double _height = 70;
   final ScrollController _controller = ScrollController();
 
@@ -70,7 +70,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         loop = await Storage.getInt("loop$mode");
 
         String active = await Storage.getString("playDirectory");
-        defaultSleepTime = await Storage.getInt("sleepTime");
+        int defaultSleepTime = await Storage.getInt("sleepTime$mode");
+        if(defaultSleepTime > 0) {
+          sleepTime = defaultSleepTime;
+        }
         history = await Storage.getJson("history$mode");
         if (history['title'] is String && history['title'] != title) {
           history = {};
@@ -87,6 +90,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         mode = "Collect";
         loop = await Storage.getInt("loop$mode");
         history = await Storage.getJson("history$mode");
+        int defaultSleepTime = await Storage.getInt("sleepTime$mode");
+        if(defaultSleepTime > 0) {
+          sleepTime = defaultSleepTime;
+        } else if(title == "日語") {
+          sleepTime = 10;
+        }
+        
         if (history['title'] is String && history['title'] != title) {
           history = {};
         }
@@ -190,7 +200,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           final found = songs.indexWhere((item) => item.id == historyId);
           if (found != -1) {
             index = found;
-          } else {
+          } else if(mode == "Collect") {
             history["start"] = null;
             history["end"] = null;
           }
@@ -363,7 +373,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   Widget _buildPopMenuSleep() {
-    var arr = [3, 5, 10, 15, 20, 30, 45, 60, 90, 120];
+    var arr = mode == "Collect" && (title == "日語" || title == "英語" || title == "VOA") 
+      ? [5, 10, 15, 20, 30, 45, 60] 
+      : [15, 20, 30, 45, 60, 90, 120];
 
     return PopupMenuButton<int>(
         icon: const Icon(Icons.alarm, color: Colors.white),
@@ -377,16 +389,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   child: Text('${arr[i]} 分鐘',
                       style: TextStyle(
                           fontSize: 18,
-                          color: defaultSleepTime == arr[i]
+                          color: sleepTime == arr[i]
                               ? Colors.red
                               : Colors.black))),
           ];
         },
         onSelected: (int value) {
           sleepTime = value;
-          defaultSleepTime = -1;
           spendSeconds = 0;
-          Storage.setInt("sleepTime", sleepTime);
+          Storage.setInt("sleepTime$mode", sleepTime);
           setState(() {});
         });
   }
@@ -1210,7 +1221,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   if(indexStart != -1 && indexEnd != -1)
                     TextButton(
                       onPressed: () async {
-                        
                         history["start"] = null;
                         history["end"] = null;
                         await Storage.setJson("history$mode", history);
@@ -1293,6 +1303,19 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
+
+
+          // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
+          if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
+            pause();
+            spendSeconds = 0;
+            return;
+            // print("positition: pause, spendSeconds: $spendSeconds, $timeline");
+          } else if (position.inSeconds > 0 && _player.playing) {
+            spendSeconds++;
+            // print("positition: playing: ${_player.playing}, spendSeconds: $spendSeconds, $timeline");
+          }
+
           if (_player.loopMode == LoopMode.one &&
               history["start"] is num &&
               history["end"] is num) {
@@ -1309,16 +1332,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
                 debugPrint("Failed: '${e.message}'.");
               }
             }
-          }
-
-          // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
-          if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
-            pause();
-            spendSeconds = 0;
-            // print("positition: pause, spendSeconds: $spendSeconds, $timeline");
-          } else if (position.inSeconds > 0 && _player.playing) {
-            spendSeconds++;
-            // print("positition: playing: ${_player.playing}, spendSeconds: $spendSeconds, $timeline");
           }
         }
       });
@@ -1369,6 +1382,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     _player.play();
     if (history["id"] is! String || history["id"] != currentSong.value.id) {
       history["id"] = currentSong.value.id;
+      if(mode == "Collect") {
+        history["start"] = null;
+        history["end"] = null;
+      }
+
       history["start"] = null;
       history["end"] = null;
       await Storage.setJson("history$mode", history);
@@ -1384,7 +1402,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> stop() async {
     await _player.stop();
-    await _player.seek(Duration.zero);
+    int start = -1;
+    if (history["start"] is num) {
+      start = history["start"];
+    }
+    await _player.seek(start > 0 ? Duration(seconds: start) : Duration.zero);
     await playbackState.firstWhere(
         (state) => state.processingState == AudioProcessingState.idle);
   }
