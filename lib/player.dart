@@ -1185,13 +1185,20 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                                   if (dialogIndexStart == -1) {
                                     dialogIndexStart = index;
                                     dialogIndexEnd = index;
-                                  } else if (index > dialogIndexEnd) {
-                                    dialogIndexEnd = index;
-                                  } else if (index < dialogIndexStart) {
-                                    dialogIndexStart = index;
-                                  } else {
+                                  } else if (index == dialogIndexEnd && dialogIndexEnd != dialogIndexStart) {
+                                    dialogIndexEnd--;
+                                  } else if (index == dialogIndexStart && dialogIndexEnd != dialogIndexStart) {
+                                    dialogIndexStart++;
+                                  } else if (index == dialogIndexEnd && dialogIndexEnd == dialogIndexStart) {
                                     dialogIndexStart = -1;
                                     dialogIndexEnd = -1;
+                                  } else if (index > dialogIndexEnd) {
+                                    dialogIndexEnd = index;
+                                  } else if (index < dialogIndexEnd) {
+                                    dialogIndexStart = index;
+                                  // } else {
+                                  //   dialogIndexStart = -1;
+                                  //   dialogIndexEnd = -1;
                                   }
                                 });
                               },
@@ -1221,11 +1228,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   if(indexStart != -1 && indexEnd != -1)
                     TextButton(
                       onPressed: () async {
-                        history["start"] = null;
-                        history["end"] = null;
+                        setDialogState(() {
+                          indexStart = -1;
+                          indexEnd = -1;
+                          dialogIndexStart = -1;
+                          dialogIndexEnd = -1;
+                          history["start"] = null;
+                          history["end"] = null;
+                        });
                         await Storage.setJson("history$mode", history);
                         _audioHandler!.seek(const Duration(seconds: 0));
-                        Navigator.of(context).pop();
                       },
                       child: const Text('取消', style: TextStyle(color: Colors.red)),
                     ),
