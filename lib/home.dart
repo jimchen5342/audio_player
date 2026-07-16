@@ -21,7 +21,7 @@ class _HomeState extends State<Home> {
   final ScrollController _controller = ScrollController();
   final double _height = 70.0;
   int activeBar = 0;
-  
+
   @override
   void initState() {
     super.initState();
@@ -44,14 +44,14 @@ class _HomeState extends State<Home> {
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     AndroidDeviceInfo build = await deviceInfoPlugin.androidInfo;
     await [
-          build.version.sdkInt < 30 
+      build.version.sdkInt < 30
           ? Permission.storage
           : Permission.manageExternalStorage
     ].request();
-    var status = build.version.sdkInt < 30 
-      ? await Permission.storage.status
-      : await Permission.manageExternalStorage.status;
-    if(! status.isGranted) {
+    var status = build.version.sdkInt < 30
+        ? await Permission.storage.status
+        : await Permission.manageExternalStorage.status;
+    if (!status.isGranted) {
       exit(0);
     } else {
       return status.isGranted;
@@ -59,16 +59,15 @@ class _HomeState extends State<Home> {
   }
 
   @override
-  void reassemble() async { // 測試用, develope mode
+  void reassemble() async {
+    // 測試用, develope mode
     super.reassemble();
     // await Storage.remove("Directories"); // 測試用
     // await Storage.remove("blackList"); // 測試用
 
     // listBlackList = await Storage.getJsonList("BlackList");
     // print(listBlackList);
-    setTimeout(() => {
-
-    }, 1000);
+    setTimeout(() => {}, 1000);
   }
 
   @override
@@ -78,33 +77,32 @@ class _HomeState extends State<Home> {
 
   switchBar() async {
     list = [];
-    if(activeBar == 0) {
+    if (activeBar == 0) {
       await initialDirectory();
     } else {
       await initialCollection();
     }
   }
 
-  initialDirectory() async { // 初始資料夾列表 
+  initialDirectory() async {
+    // 初始資料夾列表
     activeDirectory = await Storage.getString("activeDirectory");
     list = await Storage.getJsonList("Directories");
     int activeIndex = -1;
-    if(list.isEmpty) {
-      await refreshDirectory();        
+    if (list.isEmpty) {
+      await refreshDirectory();
     } else {
-      if(list.length > 10) {
-        for(var i = 0; i < list.length; i++) {
-          if(activeDirectory == list[i]["path"]){
+      if (list.length > 10) {
+        for (var i = 0; i < list.length; i++) {
+          if (activeDirectory == list[i]["path"]) {
             activeIndex = i;
             break;
           }
         }
       }
       setState(() {
-        if(activeIndex > -1) {
-          setTimeout(() => {
-            _animateToIndex(activeIndex)
-          }, 600);
+        if (activeIndex > -1) {
+          setTimeout(() => {_animateToIndex(activeIndex)}, 600);
         }
       });
     }
@@ -115,23 +113,23 @@ class _HomeState extends State<Home> {
     Archive archive = Archive();
 
     String blackList = "";
-    for(var i = 0; i < listBlackList.length; i++) {
+    for (var i = 0; i < listBlackList.length; i++) {
       blackList += "'${listBlackList[i]}'";
     }
     // print(blackList);
 
     list = await archive.getDirectories(await Archive.root(), blackList);
     list.sort((a, b) => a["title"].compareTo(b["title"]));
-    await Storage.setJsonList("Directories", list); 
+    await Storage.setJsonList("Directories", list);
     setState(() {});
     await EasyLoading.dismiss();
   }
 
   initialCollection() async {
     activeDirectory = await Storage.getString("activeCollect");
-    // print("activeCollect: ${await Storage.getString("activeCollect")}");
     list = await Storage.getJsonList("Collects");
-    if(list.isEmpty) {
+
+    if (list.isEmpty) {
       list.add({"title": "我的最愛", "datas": []});
       list.add({"title": "英語", "datas": []});
       list.add({"title": "日語", "datas": []});
@@ -139,19 +137,17 @@ class _HomeState extends State<Home> {
     } else {
       _animateToIndex(0);
       int activeIndex = -1;
-      if(list.length > 10) {
-        for(var i = 0; i < list.length; i++) {
-          if(activeDirectory == list[i]["title"]){
+      if (list.length > 10) {
+        for (var i = 0; i < list.length; i++) {
+          if (activeDirectory == list[i]["title"]) {
             activeIndex = i;
             break;
           }
         }
       }
       setState(() {
-        if(activeIndex > -1) {
-          setTimeout(() => {
-            _animateToIndex(activeIndex)
-          }, 600);
+        if (activeIndex > -1) {
+          setTimeout(() => {_animateToIndex(activeIndex)}, 600);
         }
       });
     }
@@ -163,226 +159,227 @@ class _HomeState extends State<Home> {
     super.dispose();
     _controller.dispose();
   }
-  
-  backTo(){
+
+  backTo() {
     exit(0);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
-        statusBarIconBrightness: Brightness.light, // 強制 Android 圖示為白色
-      ),
-      child: Container(
-        color: Colors.black,
-        child: SafeArea(
-          top: true,
-          child: Scaffold(
-          appBar: AppBar(
-          leading: activeBar == 0 ? Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
-          ) : const SizedBox.shrink(),
-          title: const Text('音樂播放器',
-            style: TextStyle( color:Colors.white,)
-          ),
-          actions: [
-            if(activeBar == 0 && blackList1.isEmpty) // 更新
-              IconButton( icon: const Icon( Icons.refresh, color: Colors.white),
-                onPressed: () async {
-                  await refreshDirectory();
-                },
-              ),
-            if(activeBar == 0 && blackList1.isNotEmpty) // 取消刪除
-              IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
-                  onPressed: () async {
-                    blackList1 = [];
-                    setState(() {});
-                  }
-              ),
-            if(activeBar == 0 && blackList1.isNotEmpty) // 確定刪除
-              IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
-                onPressed: () async {
-                  for(var i = list.length - 1; i >= 0; i--) {
-                    // print("'${list[i]["path"]}'");
-                    if(blackList1.contains("'${list[i]["path"]}'")) {
-                      listBlackList.add("${list[i]["path"]}");
-                      list.removeAt(i);
-                    }
-                  }
-                  await Storage.setJsonList("Directories", list);
-                  await Storage.setJsonList("BlackList", listBlackList);
-                  blackList1 = [];
-                  setState(() {});
-                },
-              ),
-            if(activeBar == 1 && blackList2.isEmpty) // 清單頁面, 新增清單
-              IconButton( icon: const Icon( Icons.add, color: Colors.white),
-                  onPressed: () async {
-                    TextEditingController textFieldController = TextEditingController();
-                    String? newListName = await showDialog<String>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('新增清單'),
-                          content: TextField(
-                            controller: textFieldController,
-                            decoration: const InputDecoration(hintText: "請輸入清單名稱"),
-                            autofocus: true,
-                          ),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('取消'),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            TextButton(
-                              child: const Text('確定'),
-                              onPressed: () => Navigator.pop(context, textFieldController.text),
-                            ),
-                          ],
-                        );
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.black,
+          statusBarIconBrightness: Brightness.light, // 強制 Android 圖示為白色
+        ),
+        child: Container(
+          color: Colors.black,
+          child: SafeArea(
+            top: true,
+            child: Scaffold(
+              appBar: AppBar(
+                leading: activeBar == 0
+                    ? Builder(
+                        builder: (context) => IconButton(
+                          icon: const Icon(Icons.menu, color: Colors.white),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                title: const Text('音樂播放器',
+                    style: TextStyle(
+                      color: Colors.white,
+                    )),
+                actions: [
+                  if (activeBar == 0 && blackList1.isEmpty) // 更新
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      onPressed: () async {
+                        await refreshDirectory();
                       },
-                    );
+                    ),
+                  if (activeBar == 0 && blackList1.isNotEmpty) // 取消刪除
+                    IconButton(
+                        icon: const Icon(Icons.cancel, color: Colors.white),
+                        onPressed: () async {
+                          blackList1 = [];
+                          setState(() {});
+                        }),
+                  if (activeBar == 0 && blackList1.isNotEmpty) // 確定刪除
+                    IconButton(
+                      icon:
+                          const Icon(Icons.check_rounded, color: Colors.white),
+                      onPressed: () async {
+                        for (var i = list.length - 1; i >= 0; i--) {
+                          // print("'${list[i]["path"]}'");
+                          if (blackList1.contains("'${list[i]["path"]}'")) {
+                            listBlackList.add("${list[i]["path"]}");
+                            list.removeAt(i);
+                          }
+                        }
+                        await Storage.setJsonList("Directories", list);
+                        await Storage.setJsonList("BlackList", listBlackList);
+                        blackList1 = [];
+                        setState(() {});
+                      },
+                    ),
+                  if (activeBar == 1 && blackList2.isEmpty) // 清單頁面, 新增清單
+                    IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () async {
+                          TextEditingController textFieldController =
+                              TextEditingController();
+                          String? newListName = await showDialog<String>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('新增清單'),
+                                content: TextField(
+                                  controller: textFieldController,
+                                  decoration: const InputDecoration(
+                                      hintText: "請輸入清單名稱"),
+                                  autofocus: true,
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('取消'),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                  TextButton(
+                                    child: const Text('確定'),
+                                    onPressed: () => Navigator.pop(
+                                        context, textFieldController.text),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
 
-                    if (newListName != null && newListName.trim().isNotEmpty) {
-                      list.add({"title": newListName.trim(), "datas": []});
-                      await Storage.setJsonList("Collects", list);
-                      setState(() {});
-                    }
-                  }
+                          if (newListName != null &&
+                              newListName.trim().isNotEmpty) {
+                            list.add(
+                                {"title": newListName.trim(), "datas": []});
+                            await Storage.setJsonList("Collects", list);
+                            setState(() {});
+                          }
+                        }),
+                  if (activeBar == 1 && blackList2.isNotEmpty) // 取消刪除
+                    IconButton(
+                        icon: const Icon(Icons.cancel, color: Colors.white),
+                        onPressed: () async {
+                          blackList2 = [];
+                          setState(() {});
+                        }),
+                  if (activeBar == 1 && blackList2.isNotEmpty) // 確定刪除
+                    IconButton(
+                      icon:
+                          const Icon(Icons.check_rounded, color: Colors.white),
+                      onPressed: () async {
+                        for (var i = list.length - 1; i >= 0; i--) {
+                          if (blackList2.contains("'${list[i]["title"]}'")) {
+                            list.removeAt(i);
+                          }
+                        }
+                        await Storage.setJsonList("Collects", list);
+                        blackList2 = [];
+                        if (list.isEmpty) {
+                          await initialCollection();
+                        } else {
+                          setState(() {});
+                        }
+                      },
+                    ),
+                ],
+                backgroundColor: Colors.deepOrangeAccent,
               ),
-            if(activeBar == 1 && blackList2.isNotEmpty) // 取消刪除
-              IconButton( icon: const Icon( Icons.cancel, color: Colors.white),
-                  onPressed: () async {
-                    blackList2 = [];
-                    setState(() {});
+              body: PopScope(
+                canPop: false,
+                onPopInvokedWithResult: (bool didPop, dynamic result) {
+                  if (didPop) {
+                    return;
                   }
+                  backTo();
+                },
+                child: Container(color: Colors.black87, child: body()),
               ),
-            if(activeBar == 1 && blackList2.isNotEmpty) // 確定刪除
-              IconButton( icon: const Icon( Icons.check_rounded, color: Colors.white),
-                onPressed: () async {
-                  for(var i = list.length - 1; i >= 0; i--) {
-                    if(blackList2.contains("'${list[i]["title"]}'")) {
-                      list.removeAt(i);
-                    }
-                  }
-                  await Storage.setJsonList("Collects", list);
+              drawer: drawer(),
+              bottomNavigationBar: BottomNavigationBar(
+                items: const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.folder), label: "資料夾"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.featured_play_list), label: "清單"),
+                ],
+                currentIndex: activeBar,
+                selectedItemColor: Colors.amber[800],
+                onTap: (int index) {
+                  activeBar = index;
+                  blackList1 = [];
                   blackList2 = [];
-                  if(list.isEmpty) {
-                    await initialCollection();
-                  } else {
-                    setState(() {});
-                  }
+                  Storage.setInt("activeBar", activeBar);
+                  setState(() {
+                    switchBar();
+                  });
                 },
               ),
-          ],
-          backgroundColor: Colors.deepOrangeAccent, 
-        ),
-        body: PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (bool didPop, dynamic result) {
-            if (didPop) {
-              return;
-            }
-            backTo();
-          },
-          child: Container( color: Colors.black87, child: body() ),
-        ),
-        drawer: drawer(),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.folder),
-              label: "資料夾"
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.featured_play_list),
-              label: "清單"
-            ),
-          ],
-          currentIndex: activeBar,
-          selectedItemColor: Colors.amber[800],
-          onTap: (int index) {
-            activeBar = index;
-            blackList1 = [];
-            blackList2 = [];
-            Storage.setInt("activeBar", activeBar);
-            setState(() {
-              switchBar();
-            });
-          },
-       ),
-        ),
-      ),
-    )
-    );
+          ),
+        ));
   }
 
   Drawer drawer() {
     Widget header = Container(
-      height: 60,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        color:  Colors.deepOrange,
-        // border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-      )
-    );
+        height: 60,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(
+          color: Colors.deepOrange,
+          // border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+        ));
 
     Widget footer = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-      ),
-      child: Text("JimC, Ver: $appVersion",
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          // color: Colors.white
-          fontSize: 16
-        )
-      )
-    );
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(
+          border: Border(
+              top: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+        ),
+        child: Text("JimC, Ver: $appVersion",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                // color: Colors.white
+                fontSize: 16)));
 
     List<Widget> children = [];
     final titles = ['黑名單'];
-    for(var i = 0; i < titles.length; i++) {
+    for (var i = 0; i < titles.length; i++) {
       children.add(ListTile(
           title: Text(titles[i]),
           onTap: () {
             Navigator.pop(context);
-            if(titles[i] == '黑名單') {
-              if(activeBar == 0) {
+            if (titles[i] == '黑名單') {
+              if (activeBar == 0) {
                 showBlackList();
-              // } else {
-              //   alert("請切回檔案頁面");
+                // } else {
+                //   alert("請切回檔案頁面");
               }
             }
-          }
-      ));
+          }));
     }
-    return  Drawer(
-      child: Column(
-        children: [
-          header,
-          Expanded(flex: 1,
-            child: ListView(
-              children: children,
-            )
-          ),
-          footer
-        ]
-      )
-    );
+    return Drawer(
+        child: Column(children: [
+      header,
+      Expanded(
+          flex: 1,
+          child: ListView(
+            children: children,
+          )),
+      footer
+    ]));
   }
 
   showBlackList() {
     listBlackList.sort();
-    Widget listview =  Container(
+    Widget listview = Container(
       height: 300.0, // Change as per your requirement
       width: 310.0, // Change as per your requirement
       child: ListView.builder(
@@ -390,31 +387,31 @@ class _HomeState extends State<Home> {
         itemCount: listBlackList.length,
         itemBuilder: (BuildContext context, int index) {
           return ListTile(
-            title: Text(listBlackList[index]),
-            onTap: () async {
-              Navigator.of(context).pop();
-              String result = await alert("確定刪除黑名單", btn: AlertButtonStyle.yesNo);
-              if(result == "yes") {
-                delBlackList(index);
-              }
-            }
-          );
+              title: Text(listBlackList[index]),
+              onTap: () async {
+                Navigator.of(context).pop();
+                String result =
+                    await alert("確定刪除黑名單", btn: AlertButtonStyle.yesNo);
+                if (result == "yes") {
+                  delBlackList(index);
+                }
+              });
         },
       ),
     );
-    
+
     // ignore: use_build_context_synchronously
     showDialog(
-      context: context,
-      // barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('黑名單'),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-          content: listview,
-        );
-      }
-    );
+        context: context,
+        // barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('黑名單'),
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(5.0))),
+            content: listview,
+          );
+        });
   }
 
   showDirectoryFiles(String path) async {
@@ -425,7 +422,8 @@ class _HomeState extends State<Home> {
       width: 310.0,
       height: 400.0,
       child: files.isEmpty
-          ? const Center(child: Text('沒有可顯示的檔案', style: TextStyle(fontSize: 16)))
+          ? const Center(
+              child: Text('沒有可顯示的檔案', style: TextStyle(fontSize: 16)))
           : ListView.builder(
               shrinkWrap: true,
               itemCount: files.length,
@@ -442,21 +440,17 @@ class _HomeState extends State<Home> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('檔案清單'),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(5.0))),
           content: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 1,
-                child: listview
-              ),
-              Text(path,
-                style: const TextStyle(
-                  color: Colors.deepOrangeAccent,
-                  fontSize: 20
-                )
-              ),
-          ]),
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 1, child: listview),
+                Text(path,
+                    style: const TextStyle(
+                        color: Colors.deepOrangeAccent, fontSize: 20)),
+              ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -475,13 +469,17 @@ class _HomeState extends State<Home> {
     Archive archive = Archive();
     count = (await archive.getFiles(listBlackList[index])).length;
 
-    list.add({"title": arr[arr.length - 1], "path": listBlackList[index], "count": count});
+    list.add({
+      "title": arr[arr.length - 1],
+      "path": listBlackList[index],
+      "count": count
+    });
     list.sort((a, b) => a["title"].compareTo(b["title"]));
     await Storage.setJsonList("Directories", list);
 
     listBlackList.removeAt(index);
-    await Storage.setJsonList("BlackList", listBlackList);              
-    setState(() { });
+    await Storage.setJsonList("BlackList", listBlackList);
+    setState(() {});
   }
 
   Widget body() {
@@ -493,137 +491,150 @@ class _HomeState extends State<Home> {
         String path = "'${list[index]["path"]}'";
         String title = "'${list[index]["title"]}'";
         return Container(
-          decoration: BoxDecoration(
-            color: (activeBar == 0 && activeDirectory == list[index]["path"]) 
-              ||  (activeBar == 1 && activeDirectory == list[index]["title"]) 
-              ? Colors.orange : Colors.transparent,
-            border: const Border(bottom: BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Material(
-                  color: activeDirectory == list[index]["path"] ? Colors.orange : Colors.transparent,
-                  child: InkWell (
-                    onLongPress: () async {
-                      if(activeBar == 0) {
-                        await showDirectoryFiles(list[index]["path"]);
-                      }
-                    },
-                    onTap: () async {
-                      if(activeBar == 1 && list[index]["datas"].length == 0) {
-                        alert("沒有檔案");
-                        return;
-                      }
+            decoration: BoxDecoration(
+              color:
+                  (activeBar == 0 && activeDirectory == list[index]["path"]) ||
+                          (activeBar == 1 &&
+                              activeDirectory == list[index]["title"])
+                      ? Colors.orange
+                      : Colors.transparent,
+              border: const Border(
+                  bottom:
+                      BorderSide(width: 1, color: Colors.deepOrange)), // 藍色邊框
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                    flex: 1,
+                    child: Material(
+                        color: activeDirectory == list[index]["path"]
+                            ? Colors.orange
+                            : Colors.transparent,
+                        child: InkWell(
+                          onLongPress: () async {
+                            if (activeBar == 0) {
+                              await showDirectoryFiles(list[index]["path"]);
+                            }
+                          },
+                          onTap: () async {
+                            if (activeBar == 1 &&
+                                list[index]["datas"].length == 0) {
+                              alert("沒有檔案");
+                              return;
+                            }
 
-                      var dirty = await Navigator.pushNamed(context, '/player', arguments: list[index]);
+                            var result = await Navigator.pushNamed(
+                                context, '/player',
+                                arguments: list[index]);
 
-                      activeDirectory = activeBar == 0 ? list[index]["path"] : list[index]["title"];
-                      if(activeBar == 0) {
-                        await Storage.setString("activeDirectory", activeDirectory);
-                      } else {
-                        await Storage.setString("activeCollect", activeDirectory);
-                      }
-                      if(activeBar == 1 && dirty is bool && dirty ) {
-                        await initialCollection();
-                      } else {
-                        setState(() {});
-                      }
+                            activeDirectory = activeBar == 0
+                                ? list[index]["path"]
+                                : list[index]["title"];
+                            
+                            if (activeBar == 1 && result is bool && result) { // 清單
+                                await initialCollection();
+                            } else if (activeBar == 0 && result is int ){
+                              list[index]["count"] = result;
+                              await Storage.setJsonList("Directories", list);
+                              setState(() {});
+                            } else {
+                              setState(() {});
+                            }
+                          },
+                          child: Container(
+                              padding: const EdgeInsets.only(left: 5),
+                              // padding: const EdgeInsets.all(5),
+                              // padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("${list[index]["title"]}",
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18)),
+                                    if (activeBar == 0 &&
+                                        list[index]["count"] != null)
+                                      Text("   ${list[index]["count"]}首",
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14)),
+                                    if (activeBar == 1)
+                                      Text("   ${list[index]["datas"].length}首",
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14))
+                                  ])),
+                        ))),
+                if (activeBar == 0 && blackList1.isEmpty)
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    onPressed: () {
+                      blackList1.add(path);
+                      setState(() {});
                     },
-                    child: Container(
-                      padding: const EdgeInsets.only(left: 5),
-                      // padding: const EdgeInsets.all(5),
-                      // padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("${list[index]["title"]}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 18
-                            )
-                          ),
-                          if(activeBar == 0 && list[index]["count"] != null)
-                            Text("   ${list[index]["count"]}首",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14
-                              )
-                            ),
-                          
-                          if(activeBar == 1)
-                            Text("   ${list[index]["datas"].length}首",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14
-                              )
-                            )
-                        ]
-                      )
-                    ),
-                  )
-                )
-              ),
-              if(activeBar == 0 && blackList1.isEmpty)
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.delete, color: Colors.white),
-                  onPressed: () {
-                    blackList1.add(path);
-                    setState(() { });
-                  },
-                ),
-              if(activeBar == 1 && blackList2.isEmpty)
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.delete, color: Colors.white),
-                  onPressed: () {
-                    blackList2.add(title);
-                    setState(() { });
-                  },
-                ),
-              if(activeBar == 0 && blackList1.isNotEmpty && blackList1.contains(path))
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.check_box_rounded, color: Colors.white),
-                  onPressed: () {
-                    blackList1.remove(path);
-                    setState(() { });
-                  },
-                ),
-              if(activeBar == 0 && blackList1.isNotEmpty && ! blackList1.contains(path))
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
-                  onPressed: () {
-                    blackList1.add(path);
-                    setState(() { });
-                  },
-                ),
-              if(activeBar == 1 && blackList2.isNotEmpty && blackList2.contains(title))
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.check_box_rounded, color: Colors.white),
-                  onPressed: () {
-                    blackList2.remove(title);
-                    setState(() { });
-                  },
-                ),
-              if(activeBar == 1 && blackList2.isNotEmpty && ! blackList2.contains(title))
-                IconButton(
-                  iconSize: 20,
-                  icon: const Icon(Icons.check_box_outline_blank_rounded, color:Colors.white),
-                  onPressed: () {
-                    blackList2.add(title);
-                    setState(() { });
-                  },
-                ),
-            ],
-          )
-        );
+                  ),
+                if (activeBar == 1 && blackList2.isEmpty)
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    onPressed: () {
+                      blackList2.add(title);
+                      setState(() {});
+                    },
+                  ),
+                if (activeBar == 0 &&
+                    blackList1.isNotEmpty &&
+                    blackList1.contains(path))
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.check_box_rounded,
+                        color: Colors.white),
+                    onPressed: () {
+                      blackList1.remove(path);
+                      setState(() {});
+                    },
+                  ),
+                if (activeBar == 0 &&
+                    blackList1.isNotEmpty &&
+                    !blackList1.contains(path))
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.check_box_outline_blank_rounded,
+                        color: Colors.white),
+                    onPressed: () {
+                      blackList1.add(path);
+                      setState(() {});
+                    },
+                  ),
+                if (activeBar == 1 &&
+                    blackList2.isNotEmpty &&
+                    blackList2.contains(title))
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.check_box_rounded,
+                        color: Colors.white),
+                    onPressed: () {
+                      blackList2.remove(title);
+                      setState(() {});
+                    },
+                  ),
+                if (activeBar == 1 &&
+                    blackList2.isNotEmpty &&
+                    !blackList2.contains(title))
+                  IconButton(
+                    iconSize: 20,
+                    icon: const Icon(Icons.check_box_outline_blank_rounded,
+                        color: Colors.white),
+                    onPressed: () {
+                      blackList2.add(title);
+                      setState(() {});
+                    },
+                  ),
+              ],
+            ));
       },
     );
   }

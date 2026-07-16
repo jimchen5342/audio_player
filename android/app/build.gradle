@@ -42,7 +42,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 35
         versionCode 1
-        versionName "2026-07-12 09:20"
+        versionName "2026-07-16 21:20"
         setProperty("archivesBaseName", "AudioPlayer")
     }
 

@@ -72,7 +72,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
         String active = await Storage.getString("playDirectory");
         int defaultSleepTime = await Storage.getInt("sleepTime$mode");
-        if(defaultSleepTime > 0) {
+        if (defaultSleepTime > 0) {
           sleepTime = defaultSleepTime;
         }
         history = await Storage.getJson("history$mode");
@@ -92,12 +92,12 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         loop = await Storage.getInt("loop$mode");
         history = await Storage.getJson("history$mode");
         int defaultSleepTime = await Storage.getInt("sleepTime$mode");
-        if(defaultSleepTime > 0) {
+        if (defaultSleepTime > 0) {
           sleepTime = defaultSleepTime;
-        } else if(title == "日語") {
+        } else if (title == "日語") {
           sleepTime = 10;
         }
-        
+
         if (history['title'] is String && history['title'] != title) {
           history = {};
         }
@@ -106,6 +106,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         // print(arg["datas"]);
         await initialCollect(arg["datas"]);
         await Storage.setString("playDirectory", "");
+      }
+
+      await Storage.setString("active$mode", mode == "Directory" ? path : title);
+
+      if (songs.isEmpty) {
+        dirty = true;
+        backTo();
+        await EasyLoading.dismiss();
+        alert("「${title}」內無音樂檔");
+        return;
       }
       isReady = true;
       setState(() {});
@@ -173,18 +183,42 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     for (var i = 0; i < datas.length; i++) {
       String path = datas[i];
       List paths = path.split("/");
-      // print(datas[i]);
-      var duration = await player.setUrl(datas[i]);
-      var item = MediaItem(
-        id: datas[i],
-        title: trimExtName(paths[paths.length - 1]),
-        album: title,
-        artist: paths[paths.length - 2],
-        duration: duration,
-      );
-      songs.add(item);
+
+      try {
+        final file = File(datas[i]);
+        if (await file.exists()) {
+          var duration = await player.setUrl(datas[i]);
+          var item = MediaItem(
+            id: datas[i],
+            title: trimExtName(paths[paths.length - 1]),
+            album: title,
+            artist: paths[paths.length - 2],
+            duration: duration,
+          );
+          songs.add(item);
+        } else {
+          dirty = true;
+          continue;
+        }
+      } catch (e) {
+        dirty = true;
+        continue;
+      }
     }
-    await intitialAudio();
+    if (dirty) {
+      List<dynamic> list = await Storage.getJsonList("Collects");
+      int index = list.indexWhere((el) => el["title"] == title);
+      if (index != -1) {
+        list[index]["datas"] = [];
+        for (var i = 0; i < songs.length; i++) {
+          list[index]["datas"].add(songs[i].id);
+        }
+      }
+      await Storage.setJsonList("Collects", list);
+    }
+    if (songs.isNotEmpty) {
+      await intitialAudio();
+    }
   }
 
   Future<void> intitialAudio() async {
@@ -201,7 +235,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           final found = songs.indexWhere((item) => item.id == historyId);
           if (found != -1) {
             index = found;
-          } else if(mode == "Collect") {
+          } else if (mode == "Collect") {
             history["start"] = null;
             history["end"] = null;
           }
@@ -253,6 +287,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     // _audioHandler!.destroy();
     // _audioHandler = null;
     // songs = [];
+    await EasyLoading.dismiss();
   }
 
   @override
@@ -265,7 +300,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   backTo() {
-    Navigator.of(context).pop(dirty);
+    if(mode == "Collect") {
+      Navigator.of(context).pop(dirty);
+    } else if(dirty) {
+      Navigator.of(context).pop(songs.length);
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -374,9 +415,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   }
 
   Widget _buildPopMenuSleep() {
-    var arr = mode == "Collect" && (title == "日語" || title == "英語" || title == "VOA") 
-      ? [5, 10, 15, 20, 30, 45, 60] 
-      : [15, 20, 30, 45, 60, 90, 120];
+    var arr =
+        mode == "Collect" && (title == "日語" || title == "英語" || title == "VOA")
+            ? [5, 10, 15, 20, 30, 45, 60]
+            : [15, 20, 30, 45, 60, 90, 120];
 
     return PopupMenuButton<int>(
         icon: const Icon(Icons.alarm, color: Colors.white),
@@ -555,20 +597,22 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               _button(Icons.cloud_download_outlined, () {
                 downloadMP3();
               }),
-            if (mode == "Collect" && loop == 1 && history["title"] == "日語") // "日語" 目錄才有下載功能
+            if (mode == "Collect" &&
+                loop == 1 &&
+                history["title"] == "日語") // "日語" 目錄才有下載功能
               _button(
                   history["start"] is num
                       ? Icons.cloud_download
                       : Icons.cloud_download_outlined, () {
                 donwloadLRC();
               }, active: history["start"] is num),
-            if(mode == "Collect" && loop == 1 && history["title"] != "日語")
-              _button(history["start"] is num
-                ? Icons.add_location : Icons.add_location_outlined,
-                () {
+            if (mode == "Collect" && loop == 1 && history["title"] != "日語")
+              _button(
+                  history["start"] is num
+                      ? Icons.add_location
+                      : Icons.add_location_outlined, () {
                 setupRange();
               }, active: history["start"] is num),
-
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
                 visible: queueIndex > 0),
@@ -831,7 +875,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
   }
 
-  void setupRange() { // 設定播放範圍
+  void setupRange() {
+    // 設定播放範圍
     _audioHandler!.pause();
     history["id"] = _audioHandler?.currentSong.value.id;
     final int? startInitial =
@@ -1079,7 +1124,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     String saveDirectory = "$root/Download/大家的日本語";
     await archive.createFolder(saveDirectory);
     String fileName = '重點.mp3';
-    
+
     void addMP3(String fullName) async {
       final player = AudioPlayer();
       var duration = await player.setUrl(fullName);
@@ -1103,6 +1148,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       );
       songs.add(item);
       setState(() {});
+      dirty = true;
+      alert("下載成功！！");
     }
 
     Future<void> download() async {
@@ -1110,7 +1157,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       try {
         await EasyLoading.show(status: '下載中...');
         final file = File(filePath);
-        if(await file.exists()) {
+        if (await file.exists()) {
           await file.delete();
         }
 
@@ -1118,13 +1165,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         if (response.statusCode == 200) {
           await file.writeAsBytes(response.bodyBytes);
           addMP3(filePath);
-          print("下載成功！檔案已儲存。");
         } else {
-          print("下載失敗，伺服器回應狀態碼: ${response.statusCode}");
+          alert("下載失敗，伺服器回應狀態碼: ${response.statusCode}");
         }
       } catch (e) {
-        print("\n🚨 發生運行時錯誤：$e");
-        print("請檢查網路連線和權限。");
+        alert("\n🚨 發生運行時錯誤：$e；\n請檢查網路連線和權限。");
       } finally {
         await EasyLoading.dismiss();
       }
@@ -1132,7 +1177,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
     void showFileNameDialog() {
       final formKey = GlobalKey<FormState>();
-      final textController = TextEditingController(text: fileName);
+      final textController =
+          TextEditingController(text: fileName.replaceAll(".mp3", ""));
 
       showDialog(
         context: context,
@@ -1145,7 +1191,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
               child: TextFormField(
                 controller: textController,
                 decoration: const InputDecoration(
-                  hintText: '例如: my_song.mp3',
+                  // hintText: '例如: my_song.mp3',
                   // labelText: '檔名 (必須為 .mp3 結尾)',
                   border: OutlineInputBorder(),
                 ),
@@ -1154,34 +1200,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   if (value == null || value.trim().isEmpty) {
                     return '檔名不能為空';
                   }
-
-                  final trimmedValue = value.trim();
-
-                  // 正則表達式解析：
-                  // ^(.+)\.([^.]+)$
-                  // - 第一組 (.+): 匹配主檔名（至少一個字元）
-                  // - \.: 匹配點號
-                  // - 第二組 ([^.]+): 匹配副檔名（不包含點號的字元）
-                  final RegExp fileRegExp = RegExp(r'^(.+)\.([^.]+)$');
-                  final match = fileRegExp.firstMatch(trimmedValue);
-
-                  if (match == null) {
-                    return '請輸入完整的檔名與副檔名 (例如: music.mp3)';
-                  }
-
-                  final fileName = match.group(1)?.trim() ?? '';
-                  final extension = match.group(2)?.toLowerCase() ?? '';
-
-                  // 1. 檢查主檔名是否有效（避免出現 ".mp3" 這種只有副檔名的情況）
-                  if (fileName.isEmpty) {
-                    return '主檔名不能為空';
-                  }
-
-                  // 2. 檢查副檔名是否為 mp3
-                  if (extension != 'mp3') {
-                    return '副檔名必須為 mp3';
-                  }
-
                   return null; // 驗證通過
                 },
               ),
@@ -1198,6 +1216,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   // 觸發 Form 的 validator
                   if (formKey.currentState!.validate()) {
                     fileName = textController.text.trim();
+                    if (!fileName.toLowerCase().endsWith('.mp3')) {
+                      fileName += ".mp3";
+                    }
                     Navigator.of(context).pop(); // 驗證成功，關閉並回傳檔名
                     download();
                   }
@@ -1214,8 +1235,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         }
       });
     }
-    // showFileNameDialog();
-    // download();
 
     Future<void> getUniqueFile() async {
       // 1. 拆分主檔名與副檔名 (例如: "重點" 與 "mp3")
@@ -1234,13 +1253,13 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       // 2. 先檢查原始檔名是否存在
       String currentPath = '$saveDirectory/$baseName$extension';
       File file = File(currentPath);
-      
+
       int counter = 1;
 
       // 3. 迴圈檢查，直到檔案不存在為止
       while (await file.exists()) {
         // 格式化新檔名，例如: "重點(1).mp3"
-        currentPath = '$saveDirectory/$baseName($counter)$extension';
+        currentPath = '$saveDirectory/$baseName$counter$extension';
         file = File(currentPath);
         counter++;
       }
@@ -1253,7 +1272,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     showFileNameDialog();
   }
 
-  Future<void> donwloadLRC() async { // 下載 LRC
+  Future<void> donwloadLRC() async {
+    // 下載 LRC
     _audioHandler?.pause();
     history["id"] = _audioHandler?.currentSong.value.id;
     final String songTitle = _audioHandler?.currentSong.value.title ?? '';
@@ -1287,19 +1307,19 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
       if (!mounted) return;
 
-      if(history["start"] is num && history["end"] is num) {
+      if (history["start"] is num && history["end"] is num) {
         final int startHistory = history["start"];
         final int endHistory = history["end"];
-        for(int i = 0; i < items.length; i++) {
+        for (int i = 0; i < items.length; i++) {
           final item = items[i];
           int startItem = item['start'] is num ? item['start'] as int : 0;
-          int endItem = item['end'] is num 
-            ? item['end'] as int 
-            : (items[i + 1]['start'] as int) - 1;
-          
-          if(indexStart == -1 && startItem >= startHistory) {
+          int endItem = item['end'] is num
+              ? item['end'] as int
+              : (items[i + 1]['start'] as int) - 1;
+
+          if (indexStart == -1 && startItem >= startHistory) {
             indexStart = i;
-          } else if(endItem <= endHistory) {
+          } else if (endItem <= endHistory) {
             indexEnd = i;
           } else {
             break;
@@ -1322,8 +1342,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (indexStart > -1 && lrcListController.hasClients) {
-              final maxScrollExtent = lrcListController.position.maxScrollExtent;
-              final targetOffset = (indexStart * 56.0).clamp(0.0, maxScrollExtent);
+              final maxScrollExtent =
+                  lrcListController.position.maxScrollExtent;
+              final targetOffset =
+                  (indexStart * 56.0).clamp(0.0, maxScrollExtent);
               lrcListController.animateTo(
                 targetOffset,
                 duration: const Duration(milliseconds: 300),
@@ -1353,8 +1375,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                             final String displayTitle =
                                 id.isEmpty ? kana : '$id. $kana';
 
-                            final bool inRange =
-                                dialogIndexStart != -1 &&
+                            final bool inRange = dialogIndexStart != -1 &&
                                 dialogIndexEnd != -1 &&
                                 index >= dialogIndexStart &&
                                 index <= dialogIndexEnd;
@@ -1372,20 +1393,23 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                                   if (dialogIndexStart == -1) {
                                     dialogIndexStart = index;
                                     dialogIndexEnd = index;
-                                  } else if (index == dialogIndexEnd && dialogIndexEnd != dialogIndexStart) {
+                                  } else if (index == dialogIndexEnd &&
+                                      dialogIndexEnd != dialogIndexStart) {
                                     dialogIndexEnd--;
-                                  } else if (index == dialogIndexStart && dialogIndexEnd != dialogIndexStart) {
+                                  } else if (index == dialogIndexStart &&
+                                      dialogIndexEnd != dialogIndexStart) {
                                     dialogIndexStart++;
-                                  } else if (index == dialogIndexEnd && dialogIndexEnd == dialogIndexStart) {
+                                  } else if (index == dialogIndexEnd &&
+                                      dialogIndexEnd == dialogIndexStart) {
                                     dialogIndexStart = -1;
                                     dialogIndexEnd = -1;
                                   } else if (index > dialogIndexEnd) {
                                     dialogIndexEnd = index;
                                   } else if (index < dialogIndexEnd) {
                                     dialogIndexStart = index;
-                                  // } else {
-                                  //   dialogIndexStart = -1;
-                                  //   dialogIndexEnd = -1;
+                                    // } else {
+                                    //   dialogIndexStart = -1;
+                                    //   dialogIndexEnd = -1;
                                   }
                                 });
                               },
@@ -1398,13 +1422,16 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                                 displayTitle,
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: inRange ? Colors.deepOrangeAccent : null,
+                                  color:
+                                      inRange ? Colors.deepOrangeAccent : null,
                                 ),
                               ),
                               trailing: Text(
                                 displayStart,
                                 style: TextStyle(
-                                  color: inRange ? Colors.deepOrangeAccent : Colors.grey,
+                                  color: inRange
+                                      ? Colors.deepOrangeAccent
+                                      : Colors.grey,
                                 ),
                               ),
                             );
@@ -1412,7 +1439,7 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                         ),
                 ),
                 actions: [
-                  if(indexStart != -1 && indexEnd != -1)
+                  if (indexStart != -1 && indexEnd != -1)
                     TextButton(
                       onPressed: () async {
                         setDialogState(() {
@@ -1426,13 +1453,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                         await Storage.setJson("history$mode", history);
                         _audioHandler!.seek(const Duration(seconds: 0));
                       },
-                      child: const Text('取消', style: TextStyle(color: Colors.red)),
+                      child:
+                          const Text('取消', style: TextStyle(color: Colors.red)),
                     ),
-                  if(dialogIndexStart != indexStart || dialogIndexEnd != indexEnd)
+                  if (dialogIndexStart != indexStart ||
+                      dialogIndexEnd != indexEnd)
                     TextButton(
                       onPressed: () async {
                         int startValue = 0;
-                        if(dialogIndexStart == -1 || dialogIndexEnd == -1) {
+                        if (dialogIndexStart == -1 || dialogIndexEnd == -1) {
                           history["start"] = null;
                           history["end"] = null;
                         } else {
@@ -1454,7 +1483,8 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                     ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('關閉', style: TextStyle(color: Colors.green)),
+                    child:
+                        const Text('關閉', style: TextStyle(color: Colors.green)),
                   ),
                 ],
               );
@@ -1502,7 +1532,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
         if (position.inSeconds != _oldSeconds) {
           currentPosition.add(position);
           _oldSeconds = position.inSeconds;
-
 
           // var timeline = DateTime.now().format(pattern: "mm:ss"); // "mm:ss"
           if (sleepTime != 0 && spendSeconds >= sleepTime * 60) {
@@ -1581,7 +1610,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
     _player.play();
     if (history["id"] is! String || history["id"] != currentSong.value.id) {
       history["id"] = currentSong.value.id;
-      if(mode == "Collect") {
+      if (mode == "Collect") {
         history["start"] = null;
         history["end"] = null;
       }
