@@ -8,6 +8,7 @@ import 'package:audio_player/system/module.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:http/http.dart' as http;
 
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
@@ -550,6 +551,10 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (mode == "Directory" && title == "大家的日本語")
+              _button(Icons.cloud_download_outlined, () {
+                downloadMP3();
+              }),
             if (mode == "Collect" && loop == 1 && history["title"] == "日語") // "日語" 目錄才有下載功能
               _button(
                   history["start"] is num
@@ -1064,6 +1069,188 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         });
       },
     );
+  }
+
+  downloadMP3() async {
+    _audioHandler?.stop();
+    const String url = "https://jimchen5342.github.io/japan/node/重點.mp3";
+    Archive archive = Archive();
+    String root = await Archive.root();
+    String saveDirectory = "$root/Download/大家的日本語";
+    await archive.createFolder(saveDirectory);
+    String fileName = '重點.mp3';
+    
+    void addMP3(String fullName) async {
+      final player = AudioPlayer();
+      var duration = await player.setUrl(fullName);
+      String songName = trimExtName(fileName);
+      String author = "";
+      if (songName.contains("-") && !songName.contains("=")) {
+        List<String> arr = songName.split("-");
+        songName = arr[1].trim();
+        if (!arr[0].trim().isNumeric()) {
+          // 有可能是數字，不要
+          author = arr[0].trim();
+        }
+      }
+
+      var item = MediaItem(
+        id: fullName,
+        title: songName,
+        album: title, // 目錄名稱
+        artist: author,
+        duration: duration,
+      );
+      songs.add(item);
+      setState(() {});
+    }
+
+    Future<void> download() async {
+      String filePath = "$saveDirectory/$fileName";
+      try {
+        await EasyLoading.show(status: '下載中...');
+        final file = File(filePath);
+        if(await file.exists()) {
+          await file.delete();
+        }
+
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          await file.writeAsBytes(response.bodyBytes);
+          addMP3(filePath);
+          print("下載成功！檔案已儲存。");
+        } else {
+          print("下載失敗，伺服器回應狀態碼: ${response.statusCode}");
+        }
+      } catch (e) {
+        print("\n🚨 發生運行時錯誤：$e");
+        print("請檢查網路連線和權限。");
+      } finally {
+        await EasyLoading.dismiss();
+      }
+    }
+
+    void showFileNameDialog() {
+      final formKey = GlobalKey<FormState>();
+      final textController = TextEditingController(text: fileName);
+
+      showDialog(
+        context: context,
+        barrierDismissible: false, // 避免點擊外部直接關閉，強制使用者決定取消或確定
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('請輸入檔案名稱'),
+            content: Form(
+              key: formKey,
+              child: TextFormField(
+                controller: textController,
+                decoration: const InputDecoration(
+                  hintText: '例如: my_song.mp3',
+                  // labelText: '檔名 (必須為 .mp3 結尾)',
+                  border: OutlineInputBorder(),
+                ),
+                // 在這裡進行檔名與副檔名的校驗
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '檔名不能為空';
+                  }
+
+                  final trimmedValue = value.trim();
+
+                  // 正則表達式解析：
+                  // ^(.+)\.([^.]+)$
+                  // - 第一組 (.+): 匹配主檔名（至少一個字元）
+                  // - \.: 匹配點號
+                  // - 第二組 ([^.]+): 匹配副檔名（不包含點號的字元）
+                  final RegExp fileRegExp = RegExp(r'^(.+)\.([^.]+)$');
+                  final match = fileRegExp.firstMatch(trimmedValue);
+
+                  if (match == null) {
+                    return '請輸入完整的檔名與副檔名 (例如: music.mp3)';
+                  }
+
+                  final fileName = match.group(1)?.trim() ?? '';
+                  final extension = match.group(2)?.toLowerCase() ?? '';
+
+                  // 1. 檢查主檔名是否有效（避免出現 ".mp3" 這種只有副檔名的情況）
+                  if (fileName.isEmpty) {
+                    return '主檔名不能為空';
+                  }
+
+                  // 2. 檢查副檔名是否為 mp3
+                  if (extension != 'mp3') {
+                    return '副檔名必須為 mp3';
+                  }
+
+                  return null; // 驗證通過
+                },
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 關閉對話框
+                },
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // 觸發 Form 的 validator
+                  if (formKey.currentState!.validate()) {
+                    fileName = textController.text.trim();
+                    Navigator.of(context).pop(); // 驗證成功，關閉並回傳檔名
+                    download();
+                  }
+                },
+                child: const Text('確定'),
+              ),
+            ],
+          );
+        },
+      ).then((value) {
+        if (value != null) {
+          // 在這裡處理驗證通過後的檔名
+          debugPrint('使用者輸入的合法檔名為: $value');
+        }
+      });
+    }
+    // showFileNameDialog();
+    // download();
+
+    Future<void> getUniqueFile() async {
+      // 1. 拆分主檔名與副檔名 (例如: "重點" 與 "mp3")
+      final dotIndex = fileName.lastIndexOf('.');
+      final String baseName;
+      final String extension;
+
+      if (dotIndex != -1) {
+        baseName = fileName.substring(0, dotIndex);
+        extension = fileName.substring(dotIndex); // 包含 "."，例如 ".mp3"
+      } else {
+        baseName = fileName;
+        extension = '';
+      }
+
+      // 2. 先檢查原始檔名是否存在
+      String currentPath = '$saveDirectory/$baseName$extension';
+      File file = File(currentPath);
+      
+      int counter = 1;
+
+      // 3. 迴圈檢查，直到檔案不存在為止
+      while (await file.exists()) {
+        // 格式化新檔名，例如: "重點(1).mp3"
+        currentPath = '$saveDirectory/$baseName($counter)$extension';
+        file = File(currentPath);
+        counter++;
+      }
+
+      fileName = file.path.replaceAll("$saveDirectory/", "");
+    }
+
+    await getUniqueFile();
+
+    showFileNameDialog();
   }
 
   Future<void> donwloadLRC() async { // 下載 LRC

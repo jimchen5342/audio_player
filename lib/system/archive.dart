@@ -73,9 +73,36 @@ class Archive {
   }
 
   bool isMusic(File file) {
-    return file.path.toLowerCase().endsWith('.mp3') 
-      || file.path.toLowerCase().endsWith('.mp4')
-      || file.path.toLowerCase().endsWith('.3gpp')
-      || file.path.toLowerCase().endsWith('.webm');
+    if(file.path.contains("/大家的日本語/") && file.path.contains(".trashed")) {
+      deleteExternalFile(file.path);
+      return false;
+    } else {
+      return file.path.toLowerCase().endsWith('.mp3') 
+        || file.path.toLowerCase().endsWith('.mp4')
+        || file.path.toLowerCase().endsWith('.3gpp')
+        || file.path.toLowerCase().endsWith('.webm');
+    }
+  }
+
+  Future<void> deleteExternalFile(String externalFilePath) async {
+    try {
+      final file = File(externalFilePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      print('Error deleting file: $e');
+    }
+  }
+
+  Future<void> createFolder(String externalFilePath) async {
+    final directory = Directory(externalFilePath);
+    try {
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+    } catch (e) {
+      print('Failed to create folder: $e');
+    }
   }
 }

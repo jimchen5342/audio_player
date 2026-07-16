@@ -42,6 +42,7 @@ dependencies:
   flutter_easyloading: ^3.0.5
   flutter_platform_alert: ^0.8.0
   rxdart: ^0.28.0
+  http: ^1.2.0
 
   # https://pub.dev/packages/audio_service
   
@@ -63,6 +64,7 @@ dependency_overrides:
   path_provider_android: 2.2.5
   sqflite: ^2.4.0
   package_info_plus: ^8.0.0
+  http: ^1.2.0           # 用於下載檔案
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

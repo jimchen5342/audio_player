@@ -118,7 +118,7 @@ class _HomeState extends State<Home> {
     for(var i = 0; i < listBlackList.length; i++) {
       blackList += "'${listBlackList[i]}'";
     }
-    print(blackList);
+    // print(blackList);
 
     list = await archive.getDirectories(await Archive.root(), blackList);
     list.sort((a, b) => a["title"].compareTo(b["title"]));
@@ -443,7 +443,20 @@ class _HomeState extends State<Home> {
         return AlertDialog(
           title: const Text('檔案清單'),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(5.0))),
-          content: listview,
+          content: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 1,
+                child: listview
+              ),
+              Text(path,
+                style: const TextStyle(
+                  color: Colors.deepOrangeAccent,
+                  fontSize: 20
+                )
+              ),
+          ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -540,6 +553,7 @@ class _HomeState extends State<Home> {
                                 fontSize: 14
                               )
                             ),
+                          
                           if(activeBar == 1)
                             Text("   ${list[index]["datas"].length}首",
                               style: const TextStyle(
