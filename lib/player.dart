@@ -852,6 +852,15 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         artist: author,
         duration: duration,
       );
+      if(mode == "Collect") {
+        List<dynamic> list = await Storage.getJsonList("Collects");
+        int index = list.indexWhere((el) => el["title"] == title);
+        if (index != -1) {
+          list[index]["datas"].add(fullName);
+        }
+        await Storage.setJsonList("Collects", list);
+      }
+
       songs.add(item);
       setState(() {});
       dirty = true;

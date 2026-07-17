@@ -517,8 +517,7 @@ class _HomeState extends State<Home> {
                             }
                           },
                           onTap: () async {
-                            if (activeBar == 1 &&
-                                list[index]["datas"].length == 0) {
+                            if (activeBar == 1 && list[index]["datas"].length == 0) {
                               alert("沒有檔案");
                               return;
                             }
@@ -532,7 +531,20 @@ class _HomeState extends State<Home> {
                                 : list[index]["title"];
                             
                             if (activeBar == 1 && result is bool && result) { // 清單
-                                await initialCollection();
+                              await initialCollection();
+                              // 重寫
+                              String path = "Download/大家的日本語";
+                              Archive archive = Archive();
+                              var list2 = await archive.getDirectories("${await Archive.root()}/$path" , "");
+                              if(list2.length == 1) {
+                                var list3 = await Storage.getJsonList("Directories");
+
+                                int index = list3.indexWhere((el) => el["path"] == path);
+                                if(index != -1) {
+                                  list3[index]["count"] = list2[0]["count"];
+                                  await Storage.setJsonList("Directories", list3);
+                                }
+                              }
                             } else if (activeBar == 0 && result is int ){
                               list[index]["count"] = result;
                               await Storage.setJsonList("Directories", list);
