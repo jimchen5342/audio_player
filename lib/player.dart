@@ -13,9 +13,8 @@ import 'package:http/http.dart' as http;
 AudioPlayerHandler? _audioHandler;
 List<MediaItem> songs = [];
 int spendSeconds = 0, sleepTime = 30;
-dynamic history = {};
 String mode = "Directory";
-MethodChannel _platform = MethodChannel('com.flutter/MethodChannel');
+MethodChannel _platform = const MethodChannel('com.flutter/MethodChannel');
 
 class Player extends StatefulWidget {
   Player({Key? key}) : super(key: key);
@@ -75,11 +74,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         if (defaultSleepTime > 0) {
           sleepTime = defaultSleepTime;
         }
-        history = await Storage.getJson("history$mode");
-        if (history['title'] is String && history['title'] != title) {
-          history = {};
-        }
-        history['title'] = title;
         // if (songs.isEmpty || active != path) {
         songs = [];
         await initialDirectory();
@@ -90,7 +84,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
       } else {
         mode = "Collect";
         loop = await Storage.getInt("loop$mode");
-        history = await Storage.getJson("history$mode");
         int defaultSleepTime = await Storage.getInt("sleepTime$mode");
         if (defaultSleepTime > 0) {
           sleepTime = defaultSleepTime;
@@ -98,10 +91,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
           sleepTime = 10;
         }
 
-        if (history['title'] is String && history['title'] != title) {
-          history = {};
-        }
-        history['title'] = title;
         songs = [];
         // print(arg["datas"]);
         await initialCollect(arg["datas"]);
@@ -224,29 +213,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
   Future<void> intitialAudio() async {
     if (songs.isNotEmpty) {
       int index = -1, start = 0;
-      if (loop == 1) {
-        String? historyId;
-        if (history != null) {
-          if (history["id"] is String) {
-            historyId = history["id"] as String;
-          }
-        }
-        if (historyId != null) {
-          final found = songs.indexWhere((item) => item.id == historyId);
-          if (found != -1) {
-            index = found;
-          } else if (mode == "Collect") {
-            history["start"] = null;
-            history["end"] = null;
-          }
-        }
-
-        if (index > -1) {
-          if (history["start"] is num) {
-            start = history["start"];
-          }
-        }
-      }
       _audioHandler ??= await AudioService.init(
         builder: () => AudioPlayerHandler(),
         config: const AudioServiceConfig(
@@ -593,26 +559,11 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (mode == "Directory" && title == "大家的日本語")
+            if ((mode == "Directory" && title == "大家的日本語") || (mode == "Collect" && title == "日語"))
               _button(Icons.cloud_download_outlined, () {
                 downloadMP3();
               }),
-            if (mode == "Collect" &&
-                loop == 1 &&
-                history["title"] == "日語") // "日語" 目錄才有下載功能
-              _button(
-                  history["start"] is num
-                      ? Icons.cloud_download
-                      : Icons.cloud_download_outlined, () {
-                donwloadLRC();
-              }, active: history["start"] is num),
-            if (mode == "Collect" && loop == 1 && history["title"] != "日語")
-              _button(
-                  history["start"] is num
-                      ? Icons.add_location
-                      : Icons.add_location_outlined, () {
-                setupRange();
-              }, active: history["start"] is num),
+
             Expanded(flex: 1, child: Container()),
             _button(Icons.skip_previous, _audioHandler!.skipToPrevious,
                 visible: queueIndex > 0),
@@ -682,13 +633,9 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
                   // divisions: 5,
                   // label: currentPosition.format(),
                   onChanged: (double value) {
-                    if (!(loop == 1 &&
-                        history["start"] is num &&
-                        history["end"] is num)) {
-                      setState(() {
-                        _audioHandler!.seek(Duration(seconds: value.toInt()));
-                      });
-                    }
+                    setState(() {
+                      _audioHandler!.seek(Duration(seconds: value.toInt()));
+                    });
                   },
                 )),
             Column(
@@ -875,247 +822,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
     }
   }
 
-  void setupRange() {
-    // 設定播放範圍
-    _audioHandler!.pause();
-    history["id"] = _audioHandler?.currentSong.value.id;
-    final int? startInitial =
-        history["start"] is num ? (history["start"] as num).toInt() : null;
-    final int? endInitial =
-        history["end"] is num ? (history["end"] as num).toInt() : null;
-    final Duration currentDuration =
-        _audioHandler?.currentSong.value.duration ?? Duration.zero;
-    final int durationSeconds = currentDuration.inSeconds;
-    final String durationHint =
-        '${(durationSeconds ~/ 60).toString().padLeft(2, '0')}:${(durationSeconds % 60).toString().padLeft(2, '0')}';
-
-    final startSecondController = TextEditingController();
-    final endSecondController = TextEditingController();
-
-    if (startInitial != null) {
-      startSecondController.text = startInitial.toString();
-    }
-    if (endInitial != null) {
-      endSecondController.text = endInitial.toString();
-    }
-
-    bool canConfirm() {
-      if (startSecondController.text.isEmpty &&
-          endSecondController.text.isEmpty) {
-        return false;
-      }
-      final int start = int.tryParse(startSecondController.text) ?? 0;
-      final int end = int.tryParse(endSecondController.text) ?? 0;
-      if (startInitial == null && endInitial == null) {
-        return start != 0 || end != 0;
-      }
-      return start != (startInitial ?? 0) || end != (endInitial ?? 0);
-    }
-
-    String formatSeconds(String secondsStr) {
-      final int seconds = int.tryParse(secondsStr) ?? 0;
-      final int minutes = seconds ~/ 60;
-      final int secs = seconds % 60;
-      return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-    }
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false, // 使用者必須點按鈕關閉
-      builder: (BuildContext context) {
-        bool confirmedEnabled = canConfirm();
-        String? errorText;
-
-        void updateState(VoidCallback fn) {
-          fn();
-          confirmedEnabled = canConfirm();
-        }
-
-        return StatefulBuilder(builder: (context, setDialogState) {
-          void onFieldChanged() {
-            setDialogState(() {
-              confirmedEnabled = canConfirm();
-              errorText = null;
-            });
-          }
-
-          return AlertDialog(
-            title: const Text(
-              '設定播放範圍',
-              // style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(5.0)),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      '開始時間：',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: startSecondController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: '0',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
-                          suffixText: '秒',
-                        ),
-                        onChanged: (_) => onFieldChanged(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          formatSeconds(startSecondController.text),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text(
-                      '結束時間：',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: endSecondController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: '$durationSeconds',
-                          // hintStyle: TextStyle(color: Colors.grey[400]),
-                          suffixText: '秒',
-                        ),
-                        onChanged: (_) => onFieldChanged(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          formatSeconds(endSecondController.text),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (durationSeconds > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '歌曲長度：$durationHint',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ),
-                if (errorText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      errorText!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            actions: [
-              if (history['start'] is num)
-                TextButton(
-                  style: TextButton.styleFrom(
-                    textStyle: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  onPressed: () async {
-                    history['start'] = null;
-                    history['end'] = null;
-                    await Storage.setJson('history$mode', history);
-                    Navigator.of(context).pop();
-                    setState(() {});
-                  },
-                  child: const Text('移除'),
-                ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  textStyle: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                onPressed: confirmedEnabled
-                    ? () async {
-                        final int start =
-                            int.tryParse(startSecondController.text) ?? 0;
-                        final int end =
-                            int.tryParse(endSecondController.text) ?? 0;
-                        if (end <= start + 10) {
-                          setDialogState(() {
-                            errorText = '結束時間需大於開始時間 10 秒';
-                          });
-                          return;
-                        }
-                        if (durationSeconds > 0 && end > durationSeconds) {
-                          setDialogState(() {
-                            errorText = '結束時間不得大於歌曲長度';
-                          });
-                          return;
-                        }
-                        history['start'] = start;
-                        history['end'] = end;
-                        await Storage.setJson('history$mode', history);
-                        Navigator.of(context).pop();
-                        _audioHandler!.seek(Duration(seconds: start));
-                        setState(() {});
-                      }
-                    : null,
-                child: const Text('確定'),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  textStyle: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('關閉'),
-              ),
-            ],
-          );
-        });
-      },
-    );
-  }
-
   downloadMP3() async {
     _audioHandler?.stop();
     const String url = "https://jimchen5342.github.io/japan/node/重點.mp3";
@@ -1271,249 +977,6 @@ class _PlayerState extends State<Player> with WidgetsBindingObserver {
 
     showFileNameDialog();
   }
-
-  Future<void> donwloadLRC() async {
-    // 下載 LRC
-    _audioHandler?.pause();
-    history["id"] = _audioHandler?.currentSong.value.id;
-    final String songTitle = _audioHandler?.currentSong.value.title ?? '';
-    final int start = songTitle.indexOf('-');
-    final String title2 =
-        start == -1 ? songTitle.trim() : songTitle.substring(0, start).trim();
-    int indexStart = -1, indexEnd = -1;
-
-    final String url =
-        'https://jimchen5342.github.io/japan/大家的日本語/${Uri.encodeComponent(title2)}.json';
-
-    final client = HttpClient();
-    try {
-      await EasyLoading.show(status: '下載中...');
-      final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
-      if (response.statusCode != HttpStatus.ok) {
-        throw Exception('下載失敗: ${response.statusCode}');
-      }
-
-      final body = await response.transform(utf8.decoder).join();
-      final decoded = jsonDecode(body);
-      if (decoded is! List) {
-        throw Exception('資料格式錯誤');
-      }
-
-      final items = decoded
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-
-      if (!mounted) return;
-
-      if (history["start"] is num && history["end"] is num) {
-        final int startHistory = history["start"];
-        final int endHistory = history["end"];
-        for (int i = 0; i < items.length; i++) {
-          final item = items[i];
-          int startItem = item['start'] is num ? item['start'] as int : 0;
-          int endItem = item['end'] is num
-              ? item['end'] as int
-              : (items[i + 1]['start'] as int) - 1;
-
-          if (indexStart == -1 && startItem >= startHistory) {
-            indexStart = i;
-          } else if (endItem <= endHistory) {
-            indexEnd = i;
-          } else {
-            break;
-          }
-        }
-      }
-
-      await EasyLoading.dismiss();
-
-      int dialogIndexStart = indexStart;
-      int dialogIndexEnd = indexEnd;
-      final ScrollController lrcListController = ScrollController();
-
-      await showDialog<void>(
-        context: context,
-        builder: (context) {
-          final screenSize = MediaQuery.of(context).size;
-          final dialogWidth = screenSize.width;
-          final dialogHeight = screenSize.height - 40;
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (indexStart > -1 && lrcListController.hasClients) {
-              final maxScrollExtent =
-                  lrcListController.position.maxScrollExtent;
-              final targetOffset =
-                  (indexStart * 56.0).clamp(0.0, maxScrollExtent);
-              lrcListController.animateTo(
-                targetOffset,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-
-          return StatefulBuilder(
-            builder: (context, setDialogState) {
-              return AlertDialog(
-                title: Text('$title2'),
-                content: SizedBox(
-                  width: dialogWidth,
-                  height: dialogHeight,
-                  child: items.isEmpty
-                      ? const Center(child: Text('沒有找到資料'))
-                      : ListView.separated(
-                          controller: lrcListController,
-                          itemCount: items.length,
-                          // itemExtent: 56,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            final String id = item['id']?.toString() ?? '';
-                            final String kana = item['kana']?.toString() ?? '';
-                            final String displayTitle =
-                                id.isEmpty ? kana : '$id. $kana';
-
-                            final bool inRange = dialogIndexStart != -1 &&
-                                dialogIndexEnd != -1 &&
-                                index >= dialogIndexStart &&
-                                index <= dialogIndexEnd;
-
-                            final num? startValue = item['start'] is num
-                                ? item['start'] as num
-                                : num.tryParse(item['start']?.toString() ?? '');
-                            final int startSeconds = startValue?.toInt() ?? 0;
-                            final String displayStart =
-                                '${(startSeconds ~/ 60).toString().padLeft(2, '0')}:${(startSeconds % 60).toString().padLeft(2, '0')}';
-
-                            return ListTile(
-                              onTap: () {
-                                setDialogState(() {
-                                  if (dialogIndexStart == -1) {
-                                    dialogIndexStart = index;
-                                    dialogIndexEnd = index;
-                                  } else if (index == dialogIndexEnd &&
-                                      dialogIndexEnd != dialogIndexStart) {
-                                    dialogIndexEnd--;
-                                  } else if (index == dialogIndexStart &&
-                                      dialogIndexEnd != dialogIndexStart) {
-                                    dialogIndexStart++;
-                                  } else if (index == dialogIndexEnd &&
-                                      dialogIndexEnd == dialogIndexStart) {
-                                    dialogIndexStart = -1;
-                                    dialogIndexEnd = -1;
-                                  } else if (index > dialogIndexEnd) {
-                                    dialogIndexEnd = index;
-                                  } else if (index < dialogIndexEnd) {
-                                    dialogIndexStart = index;
-                                    // } else {
-                                    //   dialogIndexStart = -1;
-                                    //   dialogIndexEnd = -1;
-                                  }
-                                });
-                              },
-                              // tileColor: inRange ? Colors.deepOrangeAccent : null,
-                              // textColor: inRange ? Colors.white : null,
-                              // iconColor: inRange ? Colors.white : null,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 2, vertical: 2),
-                              title: Text(
-                                displayTitle,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      inRange ? Colors.deepOrangeAccent : null,
-                                ),
-                              ),
-                              trailing: Text(
-                                displayStart,
-                                style: TextStyle(
-                                  color: inRange
-                                      ? Colors.deepOrangeAccent
-                                      : Colors.grey,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                actions: [
-                  if (indexStart != -1 && indexEnd != -1)
-                    TextButton(
-                      onPressed: () async {
-                        setDialogState(() {
-                          indexStart = -1;
-                          indexEnd = -1;
-                          dialogIndexStart = -1;
-                          dialogIndexEnd = -1;
-                          history["start"] = null;
-                          history["end"] = null;
-                        });
-                        await Storage.setJson("history$mode", history);
-                        _audioHandler!.seek(const Duration(seconds: 0));
-                      },
-                      child:
-                          const Text('取消', style: TextStyle(color: Colors.red)),
-                    ),
-                  if (dialogIndexStart != indexStart ||
-                      dialogIndexEnd != indexEnd)
-                    TextButton(
-                      onPressed: () async {
-                        int startValue = 0;
-                        if (dialogIndexStart == -1 || dialogIndexEnd == -1) {
-                          history["start"] = null;
-                          history["end"] = null;
-                        } else {
-                          startValue = items[dialogIndexStart]["start"] is num
-                              ? items[dialogIndexStart]["start"] as int
-                              : 0;
-                          history["start"] = startValue;
-                          int endValue = items[dialogIndexEnd]["end"] is num
-                              ? items[dialogIndexEnd]["end"] as int
-                              : (items[dialogIndexEnd + 1]["start"] as int) - 1;
-                          history["end"] = endValue;
-                        }
-
-                        await Storage.setJson("history$mode", history);
-                        _audioHandler!.seek(Duration(seconds: startValue));
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('確定'),
-                    ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child:
-                        const Text('關閉', style: TextStyle(color: Colors.green)),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-    } catch (error) {
-      if (!mounted) return;
-      await EasyLoading.dismiss();
-      await showDialog<void>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('下載失敗'),
-            content: Text(error.toString()),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('關閉'),
-              ),
-            ],
-          );
-        },
-      );
-    } finally {
-      client.close();
-    }
-  }
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -1542,24 +1005,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
           } else if (position.inSeconds > 0 && _player.playing) {
             spendSeconds++;
             // print("positition: playing: ${_player.playing}, spendSeconds: $spendSeconds, $timeline");
-          }
-
-          if (_player.loopMode == LoopMode.one &&
-              history["start"] is num &&
-              history["end"] is num) {
-            if (position.inSeconds >= history["end"]) {
-              await pause();
-              try {
-                await Future.delayed(const Duration(seconds: 1));
-                final String? result =
-                    await _platform.invokeMethod<String>("beep");
-                await seek(Duration(seconds: history["start"]));
-                await Future.delayed(const Duration(seconds: 3));
-                play();
-              } on PlatformException catch (e) {
-                debugPrint("Failed: '${e.message}'.");
-              }
-            }
           }
         }
       });
@@ -1608,17 +1053,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   @override
   Future<void> play() async {
     _player.play();
-    if (history["id"] is! String || history["id"] != currentSong.value.id) {
-      history["id"] = currentSong.value.id;
-      if (mode == "Collect") {
-        history["start"] = null;
-        history["end"] = null;
-      }
-
-      history["start"] = null;
-      history["end"] = null;
-      await Storage.setJson("history$mode", history);
-    }
   }
 
   @override
@@ -1631,9 +1065,6 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> stop() async {
     await _player.stop();
     int start = -1;
-    if (history["start"] is num) {
-      start = history["start"];
-    }
     await _player.seek(start > 0 ? Duration(seconds: start) : Duration.zero);
     await playbackState.firstWhere(
         (state) => state.processingState == AudioProcessingState.idle);
